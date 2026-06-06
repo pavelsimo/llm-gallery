@@ -1,4 +1,4 @@
-# llm-gallery-impl
+# llm-gallery
 
 PyTorch reimplementations of **every model** in Sebastian Raschka's
 [LLM Architecture Gallery](https://sebastianraschka.com/llm-architecture-gallery), built for **learning**
