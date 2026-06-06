@@ -1,0 +1,53 @@
+[project]
+name = "llm-gallery-impl"
+version = "0.1.0"
+description = "PyTorch reimplementations of every model in Sebastian Raschka's LLM Architecture Gallery, for learning."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.2",
+    "numpy>=1.26",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+# This is a learning application, not a distributable library, so uv does not need
+# to build/install the project itself — `uv run python -m llm_gallery.cli ...` works
+# because the package lives in the project root.
+[tool.uv]
+package = false
+
+# Use the CPU-only PyTorch build. The default wheel drags in ~5GB of CUDA 13 libraries we don't
+# need: everything here runs on CPU (tiny models) and the dev GPU (Pascal GTX 1060) isn't supported
+# by the cu13 build anyway. To use CUDA later, drop this section and re-run `uv sync`.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# Model code is full of math; keep it readable rather than fighting the linter.
+ignore = [
+    "E741", # ambiguous variable names (l, O, I) are common in math/tensor code
+    "E501", # long lines: shape-annotation comments and formulas are fine
+    "B006", # mutable defaults: we never use them, but dataclass fields can trip this
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+# The project isn't pip-installed (package = false above), so put the repo root on sys.path
+# for tests to import `llm_gallery`.
+pythonpath = ["."]

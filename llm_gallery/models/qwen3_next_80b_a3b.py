@@ -1,0 +1,283 @@
+"""Qwen3 Next (80B-A3B) — Alibaba, 2025. A hybrid of Gated DeltaNet + gated attention + MoE.
+
+Most layers use **Gated DeltaNet**, a linear-attention variant. Linear attention keeps a running
+*state matrix* ``S`` (an associative memory) instead of an O(T²) attention matrix. The **delta rule**
+makes the write *corrective*: rather than just adding ``v kᵀ``, it removes what the memory already
+predicts for ``k`` and writes the residual, ``β (v − S k) kᵀ`` — like a single online gradient step.
+A per-head **gate** ``α`` decays the state over time:
+
+    S_t = α_t · S_{t-1} + β_t · (v_t − S_{t-1} k_t) kᵀ_t        # gated delta update
+    o_t = S_t q_t                                               # read, then output-gate + norm
+
+A few layers are ordinary **gated attention** (GQA whose output is multiplied by a sigmoid gate), and
+the feed-forward is a sparse MoE. As with the other Phase-4 models, the recurrence is written
+sequentially here for clarity; production uses a chunked parallel scan.
+
+Diagram: https://sebastianraschka.com/llm-architecture-gallery (Qwen3 Next)
+Tech report: https://arxiv.org/pdf/2505.09388
+
+Self-contained: every module below is defined in THIS file.
+"""
+
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+MODEL_NAME = "Qwen3 Next (80B-A3B)"
+RELEASE_DATE = "2025-09-09"
+GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
+TECH_REPORT_URL = "https://arxiv.org/pdf/2505.09388"
+
+
+@dataclass
+class Config:
+    vocab_size: int = 151936
+    context_length: int = 40960
+    n_layer: int = 48
+    n_embd: int = 2048
+    linear_n_head: int = 16  # Gated DeltaNet heads
+    # gated attention layers (periodic)
+    n_head: int = 16
+    n_kv_head: int = 2
+    head_dim: int = 128
+    rope_theta: float = 1_000_000.0
+    attn_every: int = 4  # every Nth layer (1-indexed) is gated attention; rest are Gated DeltaNet
+    # MoE
+    n_experts: int = 512
+    n_experts_per_tok: int = 10
+    moe_intermediate_size: int = 512
+    n_shared_experts: int = 1
+    norm_eps: float = 1e-6
+    tie_embeddings: bool = False
+
+
+PRESETS: dict[str, Config] = {
+    "tiny": Config(
+        vocab_size=65, context_length=128, n_layer=6, n_embd=128, linear_n_head=4, n_head=4,
+        n_kv_head=2, head_dim=32, rope_theta=10000.0, attn_every=3, n_experts=8, n_experts_per_tok=2,
+        moe_intermediate_size=128, n_shared_experts=1,
+    ),
+    "qwen3-next-80b-a3b": Config(),
+}
+DEFAULT_PRESET = "qwen3-next-80b-a3b"
+
+
+class RMSNorm(nn.Module):
+    def __init__(self, dim: int, eps: float = 1e-6):
+        super().__init__()
+        self.eps = eps
+        self.weight = nn.Parameter(torch.ones(dim))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        dtype = x.dtype
+        x = x.float()
+        x = x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+        return (x.to(dtype)) * self.weight
+
+
+class GatedDeltaNet(nn.Module):
+    """Linear attention with the gated delta update rule (explicit causal recurrence)."""
+
+    def __init__(self, cfg: Config):
+        super().__init__()
+        self.n_head = cfg.linear_n_head
+        self.head_dim = cfg.n_embd // cfg.linear_n_head
+        self.q_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
+        self.k_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
+        self.v_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
+        self.alpha_proj = nn.Linear(cfg.n_embd, cfg.linear_n_head)  # decay gate per head
+        self.beta_proj = nn.Linear(cfg.n_embd, cfg.linear_n_head)  # write strength per head
+        self.g_proj = nn.Linear(cfg.n_embd, cfg.n_embd)  # output gate
+        self.out_norm = RMSNorm(self.head_dim, cfg.norm_eps)
+        self.out_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        b, t, d = x.shape
+        nh, hd = self.n_head, self.head_dim
+        q = self.q_proj(x).view(b, t, nh, hd)
+        k = F.normalize(self.k_proj(x).view(b, t, nh, hd), dim=-1)  # unit keys (delta-rule stability)
+        v = self.v_proj(x).view(b, t, nh, hd)
+        alpha = torch.sigmoid(self.alpha_proj(x))  # [B, T, nh] in (0,1)
+        beta = torch.sigmoid(self.beta_proj(x))
+
+        s = x.new_zeros(b, nh, hd, hd)  # state: [value_dim, key_dim]
+        outs = []
+        for i in range(t):
+            k_i, v_i, q_i = k[:, i], v[:, i], q[:, i]  # [B, nh, hd]
+            a = alpha[:, i].view(b, nh, 1, 1)
+            be = beta[:, i].view(b, nh, 1, 1)
+            sk = (s @ k_i.unsqueeze(-1)).squeeze(-1)  # [B, nh, hd] current memory readout for k
+            s = a * s + be * ((v_i - sk).unsqueeze(-1) @ k_i.unsqueeze(-2))  # corrective write
+            outs.append((s @ q_i.unsqueeze(-1)).squeeze(-1))  # read with query
+        o = torch.stack(outs, dim=1)  # [B, T, nh, hd]
+        o = self.out_norm(o).reshape(b, t, d)
+        o = o * F.silu(self.g_proj(x))  # output gate
+        return self.out_proj(o)
+
+
+def precompute_rope(head_dim, max_seq_len, theta):
+    inv_freq = 1.0 / (theta ** (torch.arange(0, head_dim, 2).float() / head_dim))
+    freqs = torch.outer(torch.arange(max_seq_len).float(), inv_freq)
+    emb = torch.cat([freqs, freqs], dim=-1)
+    return emb.cos(), emb.sin()
+
+
+def rotate_half(x):
+    x1, x2 = x.chunk(2, dim=-1)
+    return torch.cat((-x2, x1), dim=-1)
+
+
+def apply_rope(q, k, cos, sin):
+    cos, sin = cos[None, None], sin[None, None]
+    return q * cos + rotate_half(q) * sin, k * cos + rotate_half(k) * sin
+
+
+def repeat_kv(x, n_rep):
+    if n_rep == 1:
+        return x
+    b, n_kv, t, hd = x.shape
+    return x[:, :, None, :, :].expand(b, n_kv, n_rep, t, hd).reshape(b, n_kv * n_rep, t, hd)
+
+
+class GatedAttention(nn.Module):
+    """Standard GQA whose output is multiplied by a learned sigmoid gate."""
+
+    def __init__(self, cfg: Config):
+        super().__init__()
+        self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
+        self.n_rep = cfg.n_head // cfg.n_kv_head
+        self.head_dim = cfg.head_dim
+        self.q_proj = nn.Linear(cfg.n_embd, self.n_head * self.head_dim, bias=False)
+        self.k_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
+        self.v_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
+        self.g_proj = nn.Linear(cfg.n_embd, self.n_head * self.head_dim, bias=False)  # gate
+        self.o_proj = nn.Linear(self.n_head * self.head_dim, cfg.n_embd, bias=False)
+
+    def forward(self, x, cos, sin, mask):
+        b, t, _ = x.shape
+        q = self.q_proj(x).view(b, t, self.n_head, self.head_dim).transpose(1, 2)
+        k = self.k_proj(x).view(b, t, self.n_kv_head, self.head_dim).transpose(1, 2)
+        v = self.v_proj(x).view(b, t, self.n_kv_head, self.head_dim).transpose(1, 2)
+        q, k = apply_rope(q, k, cos, sin)
+        k, v = repeat_kv(k, self.n_rep), repeat_kv(v, self.n_rep)
+        att = (q @ k.transpose(-2, -1)) / math.sqrt(self.head_dim)
+        att = att.masked_fill(mask[:t, :t], float("-inf"))
+        att = F.softmax(att, dim=-1)
+        y = (att @ v).transpose(1, 2).reshape(b, t, self.n_head * self.head_dim)
+        y = y * torch.sigmoid(self.g_proj(x))  # output gate
+        return self.o_proj(y)
+
+
+class MLP(nn.Module):
+    def __init__(self, n_embd, intermediate):
+        super().__init__()
+        self.gate_proj = nn.Linear(n_embd, intermediate, bias=False)
+        self.up_proj = nn.Linear(n_embd, intermediate, bias=False)
+        self.down_proj = nn.Linear(intermediate, n_embd, bias=False)
+
+    def forward(self, x):
+        return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
+
+
+class MoE(nn.Module):
+    def __init__(self, cfg: Config):
+        super().__init__()
+        self.n_experts, self.top_k = cfg.n_experts, cfg.n_experts_per_tok
+        self.gate = nn.Linear(cfg.n_embd, cfg.n_experts, bias=False)
+        self.experts = nn.ModuleList(MLP(cfg.n_embd, cfg.moe_intermediate_size) for _ in range(cfg.n_experts))
+        self.shared = (
+            MLP(cfg.n_embd, cfg.moe_intermediate_size * cfg.n_shared_experts)
+            if cfg.n_shared_experts > 0 else None
+        )
+
+    def forward(self, x):
+        b, t, c = x.shape
+        x = x.reshape(-1, c)
+        topw, topi = F.softmax(self.gate(x), dim=-1).topk(self.top_k, dim=-1)
+        topw = topw / topw.sum(dim=-1, keepdim=True)
+        out = torch.zeros_like(x)
+        for e in range(self.n_experts):
+            sel = topi == e
+            if not sel.any():
+                continue
+            ti, slot = sel.nonzero(as_tuple=True)
+            out[ti] += topw[ti, slot].unsqueeze(-1) * self.experts[e](x[ti])
+        if self.shared is not None:
+            out = out + self.shared(x)
+        return out.reshape(b, t, c)
+
+
+class Block(nn.Module):
+    def __init__(self, cfg: Config, is_attn: bool):
+        super().__init__()
+        self.is_attn = is_attn
+        self.mix_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
+        self.mix = GatedAttention(cfg) if is_attn else GatedDeltaNet(cfg)
+        self.ffn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
+        self.ffn = MoE(cfg)
+
+    def forward(self, x, cos, sin, mask):
+        if self.is_attn:
+            x = x + self.mix(self.mix_norm(x), cos, sin, mask)
+        else:
+            x = x + self.mix(self.mix_norm(x))
+        x = x + self.ffn(self.ffn_norm(x))
+        return x
+
+
+class Model(nn.Module):
+    def __init__(self, cfg: Config):
+        super().__init__()
+        self.config = cfg
+        self.tok_emb = nn.Embedding(cfg.vocab_size, cfg.n_embd)
+        self.blocks = nn.ModuleList(
+            Block(cfg, is_attn=((i + 1) % cfg.attn_every == 0)) for i in range(cfg.n_layer)
+        )
+        self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
+        self.lm_head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
+        if cfg.tie_embeddings:
+            self.lm_head.weight = self.tok_emb.weight
+        cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
+        self.register_buffer("rope_cos", cos, persistent=False)
+        self.register_buffer("rope_sin", sin, persistent=False)
+        causal = torch.triu(
+            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
+        )
+        self.register_buffer("causal_mask", causal, persistent=False)
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m: nn.Module) -> None:
+        if isinstance(m, nn.Linear):
+            nn.init.normal_(m.weight, mean=0.0, std=0.02)
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
+        elif isinstance(m, nn.Embedding):
+            nn.init.normal_(m.weight, mean=0.0, std=0.02)
+
+    def forward(self, idx: torch.Tensor) -> torch.Tensor:
+        b, t = idx.shape
+        x = self.tok_emb(idx)
+        cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        for block in self.blocks:
+            x = block(x, cos, sin, self.causal_mask)
+        return self.lm_head(self.norm(x))
+
+
+if __name__ == "__main__":
+    torch.manual_seed(0)
+    cfg = PRESETS["tiny"]
+    model = Model(cfg)
+    idx = torch.randint(0, cfg.vocab_size, (2, 16))
+    logits = model(idx)
+    loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), idx.reshape(-1))
+    loss.backward()
+    n_attn = sum(b.is_attn for b in model.blocks)
+    print(f"{MODEL_NAME}  (tiny preset)")
+    print(f"  mixers : {cfg.n_layer - n_attn} Gated DeltaNet + {n_attn} gated-attention layers")
+    print(f"  params : {sum(p.numel() for p in model.parameters()):,}")
+    print(f"  logits : {tuple(logits.shape)}  loss {loss.item():.4f}  (~ln(vocab)={math.log(cfg.vocab_size):.4f})")
