@@ -32,6 +32,9 @@ GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 TECH_REPORT_URL = "https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotron-3-Nano-Technical-Report.pdf"
 
 
+# --------------------------------------------------------------------------------------------------
+# Config
+# --------------------------------------------------------------------------------------------------
 @dataclass
 class Config:
     vocab_size: int = 131072
@@ -72,7 +75,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "nemotron3-nano-30b"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-5):
         super().__init__()
         self.eps = eps
@@ -85,8 +93,11 @@ class RMSNorm(nn.Module):
         return (x.to(dtype)) * self.weight
 
 
-# -------------------------------------------------------------------------- Mamba (selective SSM)
+# --------------------------------------------------------------------------------------------------
+# Mamba-2 selective SSM
+# --------------------------------------------------------------------------------------------------
 class Mamba(nn.Module):
+    """Selective state-space model: input-dependent gating of a linear recurrence (Mamba-2 style)."""
     def __init__(self, cfg: Config):
         super().__init__()
         self.d_inner = cfg.mamba_expand * cfg.n_embd
@@ -132,7 +143,9 @@ class Mamba(nn.Module):
         return self.out_proj(y)
 
 
-# -------------------------------------------------------------------------- GQA attention (hybrid)
+# --------------------------------------------------------------------------------------------------
+# GQA attention (hybrid layers)
+# --------------------------------------------------------------------------------------------------
 def precompute_rope(head_dim, max_seq_len, theta):
     inv_freq = 1.0 / (theta ** (torch.arange(0, head_dim, 2).float() / head_dim))
     freqs = torch.outer(torch.arange(max_seq_len).float(), inv_freq)
@@ -158,6 +171,8 @@ def repeat_kv(x, n_rep):
 
 
 class Attention(nn.Module):
+    """Standard GQA used for the periodic full-attention layers in the hybrid stack."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
@@ -182,8 +197,12 @@ class Attention(nn.Module):
         return self.o_proj(y)
 
 
-# -------------------------------------------------------------------------- feed-forward (MoE/dense)
+# --------------------------------------------------------------------------------------------------
+# Feed-forward (MoE or dense)
+# --------------------------------------------------------------------------------------------------
 class MLP(nn.Module):
+    """SwiGLU expert MLP; used both as the dense fallback and as a single routed expert."""
+
     def __init__(self, n_embd, intermediate):
         super().__init__()
         self.gate_proj = nn.Linear(n_embd, intermediate, bias=False)
@@ -195,6 +214,8 @@ class MLP(nn.Module):
 
 
 class MoE(nn.Module):
+    """Sparse top-k MoE with optional always-on shared expert."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_experts, self.top_k = cfg.n_experts, cfg.n_experts_per_tok
@@ -223,6 +244,8 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
+    """Hybrid block: Mamba-2 SSM or GQA attention (is_attn), always followed by MoE/dense FFN."""
+
     def __init__(self, cfg: Config, is_attn: bool):
         super().__init__()
         self.is_attn = is_attn
@@ -237,7 +260,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run Mamba-2/attention hybrid blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -275,6 +303,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/nemotron3_nano_30b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

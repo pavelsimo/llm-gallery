@@ -28,6 +28,9 @@ GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 TECH_REPORT_URL = "https://huggingface.co/blog/smollm3"
 
 
+# --------------------------------------------------------------------------------------------------
+# Config
+# --------------------------------------------------------------------------------------------------
 @dataclass
 class Config:
     vocab_size: int = 128256
@@ -53,7 +56,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "smollm3-3b"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-5):
         super().__init__()
         self.eps = eps
@@ -92,6 +100,8 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 class Attention(nn.Module):
+    """GQA that skips RoPE rotation on NoPE layers (use_rope=False), relying on the causal mask."""
+
     def __init__(self, cfg: Config, use_rope: bool):
         super().__init__()
         self.use_rope = use_rope  # NoPE layers set this False and skip the rotation
@@ -122,6 +132,8 @@ class Attention(nn.Module):
 
 
 class SwiGLU(nn.Module):
+    """Gated FFN: SiLU(gate(x)) ⊙ up(x), projected back to n_embd. No bias."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.gate_proj = nn.Linear(cfg.n_embd, cfg.intermediate_size, bias=False)
@@ -133,6 +145,8 @@ class SwiGLU(nn.Module):
 
 
 class Block(nn.Module):
+    """Pre-norm Transformer block; attention layer may be NoPE (no positional rotation)."""
+
     def __init__(self, cfg: Config, use_rope: bool):
         super().__init__()
         self.attn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
@@ -146,7 +160,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run mixed RoPE/NoPE blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -183,6 +202,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/smollm3_3b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

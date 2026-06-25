@@ -40,6 +40,9 @@ GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 TECH_REPORT_URL = "https://arxiv.org/pdf/2505.09388"
 
 
+# --------------------------------------------------------------------------------------------------
+# Config
+# --------------------------------------------------------------------------------------------------
 @dataclass
 class Config:
     vocab_size: int = 151936
@@ -72,7 +75,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "qwen3-30b-a3b"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -110,6 +118,8 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 class Attention(nn.Module):
+    """GQA with optional per-head QK-Norm (enabled by cfg.qk_norm); same for all MoE layers."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
@@ -196,6 +206,8 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
+    """Pre-norm block: GQA attention + sparse MoE feed-forward, both with residual connections."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.attn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
@@ -209,7 +221,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run MoE blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -241,6 +258,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/qwen3_30b_a3b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

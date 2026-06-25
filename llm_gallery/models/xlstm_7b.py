@@ -36,6 +36,9 @@ GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 TECH_REPORT_URL = "https://arxiv.org/abs/2503.13427"
 
 
+# --------------------------------------------------------------------------------------------------
+# Config
+# --------------------------------------------------------------------------------------------------
 @dataclass
 class Config:
     vocab_size: int = 50304
@@ -57,7 +60,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "xlstm-7b"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-5):
         super().__init__()
         self.eps = eps
@@ -113,6 +121,8 @@ class mLSTM(nn.Module):
 
 
 class SwiGLU(nn.Module):
+    """Gated FFN: SiLU(gate(x)) ⊙ up(x), projected back to n_embd. No bias."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.gate_proj = nn.Linear(cfg.n_embd, cfg.intermediate_size, bias=False)
@@ -124,6 +134,8 @@ class SwiGLU(nn.Module):
 
 
 class Block(nn.Module):
+    """Pre-norm block with mLSTM token mixer instead of attention, plus SwiGLU FFN."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.mix_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
@@ -137,7 +149,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run mLSTM blocks (no positional encoding), project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -165,6 +182,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/xlstm_7b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

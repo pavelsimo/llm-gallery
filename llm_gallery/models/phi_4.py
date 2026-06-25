@@ -3,6 +3,9 @@
 Phi-4: dense GQA + RoPE in the Llama style (pre-norm RMSNorm, SwiGLU), tied embeddings.
 Notable for its data-centric training recipe rather than architectural novelty.
 
+Architecture : RoPE · GQA · SwiGLU · RMSNorm (pre-norm dense)
+Reference    : llama3_8b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Phi-4 (14B))
 Tech report: https://arxiv.org/pdf/2412.08905
 

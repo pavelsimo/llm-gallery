@@ -3,6 +3,9 @@
 Gemma 4 26B-A4B: a Gemma-flavored sparse MoE. ASSUMPTION: modeled with the generic MoE
 layer; Gemma's sandwich norm + sliding/global schedule are omitted. Config approximate.
 
+Architecture : GQA · top-k sparse MoE · RoPE · SwiGLU · RMSNorm
+Reference    : qwen3_30b_a3b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Gemma 4 (26B-A4B))
 Tech report: https://ai.google.dev/gemma/docs/core/model_card_4
 
@@ -56,7 +59,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "gemma4-26b-a4b"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -94,6 +102,8 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 class Attention(nn.Module):
+    """GQA with optional per-head QK-Norm (enabled by cfg.qk_norm); same for all MoE layers."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
@@ -180,6 +190,8 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
+    """Pre-norm block: GQA attention + sparse MoE feed-forward, both with residual connections."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.attn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
@@ -193,7 +205,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run MoE blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -225,6 +242,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/qwen3_30b_a3b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

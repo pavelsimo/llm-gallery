@@ -36,6 +36,9 @@ GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 TECH_REPORT_URL = "https://arxiv.org/pdf/2510.26692"
 
 
+# --------------------------------------------------------------------------------------------------
+# Config
+# --------------------------------------------------------------------------------------------------
 @dataclass
 class Config:
     vocab_size: int = 163840
@@ -67,7 +70,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "kimi-linear"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -145,6 +153,8 @@ def repeat_kv(x, n_rep):
 
 
 class Attention(nn.Module):
+    """Standard GQA used for the periodic full-attention layers in the linear/full hybrid."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
@@ -170,6 +180,8 @@ class Attention(nn.Module):
 
 
 class MLP(nn.Module):
+    """SwiGLU expert MLP used as a single routed expert in the MoE layer."""
+
     def __init__(self, n_embd, intermediate):
         super().__init__()
         self.gate_proj = nn.Linear(n_embd, intermediate, bias=False)
@@ -181,6 +193,8 @@ class MLP(nn.Module):
 
 
 class MoE(nn.Module):
+    """Sparse top-k MoE with optional always-on shared expert."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_experts, self.top_k = cfg.n_experts, cfg.n_experts_per_tok
@@ -209,6 +223,8 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
+    """Hybrid block: LinearAttention or GQA (is_attn), always followed by a sparse MoE FFN."""
+
     def __init__(self, cfg: Config, is_attn: bool):
         super().__init__()
         self.is_attn = is_attn
@@ -226,7 +242,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run linear/full-attention hybrid blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -264,6 +285,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/kimi_linear.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

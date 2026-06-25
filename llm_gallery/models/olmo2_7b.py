@@ -34,6 +34,9 @@ GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 TECH_REPORT_URL = "https://arxiv.org/pdf/2501.00656"
 
 
+# --------------------------------------------------------------------------------------------------
+# Config
+# --------------------------------------------------------------------------------------------------
 @dataclass
 class Config:
     vocab_size: int = 100352
@@ -57,7 +60,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "olmo2-7b"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -96,6 +104,8 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 class Attention(nn.Module):
+    """Full MHA (no GQA) with OLMo-style QK-Norm over the entire projection, not per-head."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head = cfg.n_head
@@ -131,6 +141,8 @@ class Attention(nn.Module):
 
 
 class SwiGLU(nn.Module):
+    """Gated FFN: SiLU(gate(x)) ⊙ up(x), projected back to n_embd. No bias."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.gate_proj = nn.Linear(cfg.n_embd, cfg.intermediate_size, bias=False)
@@ -157,7 +169,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run post-norm blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -189,6 +206,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/olmo2_7b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

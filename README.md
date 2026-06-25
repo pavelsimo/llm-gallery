@@ -20,6 +20,9 @@ PyTorch and modern LLM architecture by reading and running clean code.
 ```bash
 uv sync                                   # install torch, numpy, pytest, ruff
 
+# show the recommended learning path (Tier 1 → 2 → 3)
+uv run python -m llm_gallery.cli path
+
 # list every model in the gallery and its status
 uv run python -m llm_gallery.cli list
 
@@ -58,7 +61,7 @@ instantiated full-size on modest hardware.
 llm_gallery/
   models/        one self-contained file per gallery model + registry.py
   harness/       shared tooling: data.py, train.py, generate.py, interface.py
-  cli.py         list | info | smoke | train | generate
+  cli.py         list | info | path | smoke | train | generate
 docs/
   architectures.md   the taxonomy of ideas the 78 models are built from
 tests/
@@ -67,9 +70,27 @@ tests/
 
 ## Learning path
 
-See [`docs/architectures.md`](docs/architectures.md) for the "family tree" of building blocks (normalization,
-positional encodings, attention variants, MoE, non-attention mixers) and a suggested reading order. Models are
-implemented in tiers of increasing novelty: dense classics → MoE → MLA → hybrid/recurrent.
+```bash
+uv run python -m llm_gallery.cli path        # print the recommended reading order
+uv run python -m llm_gallery.cli path --all  # include all 78 models
+```
+
+The 78 models are grouped into three tiers:
+
+| Tier | Count | Meaning |
+|------|-------|---------|
+| **1 — Essential** | 8 | One file per architectural family; start here |
+| **2 — Important** | 10 | Introduce a specific new idea vs. a Tier 1 neighbour |
+| **3 — Variant** | 60 | Config/scale variants; read the base file first |
+
+**Suggested workflow per model:**
+
+1. `uv run python -m llm_gallery.cli info <slug>` — read the one-line concept note and paper link
+2. Open `llm_gallery/models/<slug>.py` — every building block is in a single file, top-to-bottom
+3. `uv run python -m llm_gallery.cli smoke <slug>` — run forward+backward; verify shapes and param count
+
+See [`docs/architectures.md`](docs/architectures.md) for the conceptual "family tree" of building blocks
+(normalization, positional encodings, attention variants, MoE, non-attention mixers).
 
 ## Status
 

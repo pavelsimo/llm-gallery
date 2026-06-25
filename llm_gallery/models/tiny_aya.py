@@ -36,6 +36,9 @@ GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 TECH_REPORT_URL = "https://arxiv.org/pdf/2603.11510"
 
 
+# --------------------------------------------------------------------------------------------------
+# Config
+# --------------------------------------------------------------------------------------------------
 @dataclass
 class Config:
     vocab_size: int = 256000
@@ -61,7 +64,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "tiny-aya"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-5):
         super().__init__()
         self.eps = eps
@@ -99,6 +107,8 @@ def repeat_kv(x, n_rep):
 
 
 class Attention(nn.Module):
+    """Standard GQA with RoPE; used in parallel with SwiGLU from a single shared norm."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
@@ -124,6 +134,8 @@ class Attention(nn.Module):
 
 
 class SwiGLU(nn.Module):
+    """Gated FFN: SiLU(gate(x)) ⊙ up(x), projected back to n_embd. No bias."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.gate_proj = nn.Linear(cfg.n_embd, cfg.intermediate_size, bias=False)
@@ -148,7 +160,12 @@ class Block(nn.Module):
         return x + self.attn(h, cos, sin, mask) + self.ffn(h)
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run parallel blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -180,6 +197,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/tiny_aya.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

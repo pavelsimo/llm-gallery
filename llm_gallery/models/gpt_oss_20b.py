@@ -36,6 +36,9 @@ GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 TECH_REPORT_URL = "https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf"
 
 
+# --------------------------------------------------------------------------------------------------
+# Config
+# --------------------------------------------------------------------------------------------------
 @dataclass
 class Config:
     vocab_size: int = 201088
@@ -65,7 +68,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "gpt-oss-20b"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-5):
         super().__init__()
         self.eps = eps
@@ -103,6 +111,8 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 class Attention(nn.Module):
+    """GQA with per-head learned attention sinks: a virtual token absorbs excess softmax mass."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
@@ -136,6 +146,8 @@ class Attention(nn.Module):
 
 
 class Expert(nn.Module):
+    """One SwiGLU expert MLP (with biases, per GPT-OSS design)."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.gate_proj = nn.Linear(cfg.n_embd, cfg.moe_intermediate_size, bias=True)
@@ -147,6 +159,8 @@ class Expert(nn.Module):
 
 
 class MoE(nn.Module):
+    """Sparse top-k MoE: router selects k experts per token, weighted-sums their outputs."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_experts = cfg.n_experts
@@ -170,6 +184,8 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
+    """Pre-norm block with alternating local/global attention mask (is_local) and MoE FFN."""
+
     def __init__(self, cfg: Config, is_local: bool):
         super().__init__()
         self.is_local = is_local
@@ -184,7 +200,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run alternating local/global MoE blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -225,6 +246,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/gpt_oss_20b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

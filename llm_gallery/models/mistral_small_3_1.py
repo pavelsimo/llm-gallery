@@ -3,6 +3,9 @@
 Mistral Small 3.1: a dense GQA transformer (RoPE + SwiGLU + RMSNorm) with a decoupled
 head_dim (128, vs n_embd/n_head=160). Architecturally Llama-style; see llama3_8b.py.
 
+Architecture : RoPE · GQA · SwiGLU · RMSNorm (pre-norm dense)
+Reference    : llama3_8b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Mistral Small 3.1 (24B))
 Tech report: https://mistral.ai/news/mistral-small-3-1
 

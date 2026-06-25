@@ -3,6 +3,9 @@
 A 3B dense Llama-family model: RoPE + GQA + SwiGLU + RMSNorm with tied embeddings.
 Same architecture as llama3_8b.py — see it for the annotated walkthrough.
 
+Architecture : RoPE · GQA · SwiGLU · RMSNorm (pre-norm dense)
+Reference    : llama3_8b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Llama 3.2 (3B))
 Tech report: https://arxiv.org/pdf/2407.21783
 

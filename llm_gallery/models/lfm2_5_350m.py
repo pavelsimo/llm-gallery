@@ -2,6 +2,9 @@
 
 LFM2.5 350M: modeled as a dense GQA transformer (see note in lfm2.5-1.2b).
 
+Architecture : RoPE · GQA · SwiGLU · RMSNorm (pre-norm dense)
+Reference    : llama3_8b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (LFM2.5 (350M))
 Tech report: 
 

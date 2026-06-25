@@ -2,6 +2,9 @@
 
 GLM-5.1: iteration on GLM-5 (MLA + MoE). Config approximate.
 
+Architecture : Multi-head Latent Attention (MLA) · fine-grained MoE · shared experts
+Reference    : deepseek_v3.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (GLM-5.1 (744B))
 Tech report: 
 
@@ -60,7 +63,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "glm-5.1"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -195,6 +203,8 @@ class DeepseekMoE(nn.Module):
 
 
 class Block(nn.Module):
+    """Pre-norm block: MLA attention + dense MLP (early layers) or DeepseekMoE (later layers)."""
+
     def __init__(self, cfg: Config, layer_idx: int):
         super().__init__()
         self.attn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
@@ -212,7 +222,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run MLA+MoE blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -246,6 +261,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/deepseek_v3.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

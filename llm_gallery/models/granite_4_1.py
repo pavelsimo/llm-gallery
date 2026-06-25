@@ -3,6 +3,9 @@
 Granite 4.1 (30B): modeled as a dense GQA transformer per the gallery's 'dense attention'.
 NOTE: Granite 4 is in reality a Mamba/transformer hybrid; this is a dense approximation.
 
+Architecture : RoPE · GQA · SwiGLU · RMSNorm (pre-norm dense)
+Reference    : llama3_8b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Granite 4.1 (30B))
 Tech report: 
 

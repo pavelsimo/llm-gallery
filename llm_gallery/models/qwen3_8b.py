@@ -3,6 +3,9 @@
 Qwen3 8B: dense GQA + per-head QK-Norm + RoPE + SwiGLU. Larger Qwen3 models (8B+) do
 NOT tie embeddings. See qwen3_0_6b.py for the annotated blocks.
 
+Architecture : RoPE · GQA · per-head QK-Norm · SwiGLU · RMSNorm
+Reference    : qwen3_0_6b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Qwen3 (8B))
 Tech report: https://arxiv.org/pdf/2505.09388
 
@@ -50,7 +53,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "qwen3-8b"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -89,6 +97,8 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 class Attention(nn.Module):
+    """GQA with per-head QK-Norm (RMSNorm over head_dim per head) applied before RoPE."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head = cfg.n_head
@@ -121,6 +131,8 @@ class Attention(nn.Module):
 
 
 class SwiGLU(nn.Module):
+    """Gated FFN: SiLU(gate(x)) ⊙ up(x), projected back to n_embd. No bias."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.gate_proj = nn.Linear(cfg.n_embd, cfg.intermediate_size, bias=False)
@@ -132,6 +144,8 @@ class SwiGLU(nn.Module):
 
 
 class Block(nn.Module):
+    """Pre-norm Transformer block: RMSNorm -> attn -> residual; RMSNorm -> FFN -> residual."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.attn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
@@ -145,7 +159,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run pre-norm blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -178,6 +197,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/qwen3_0_6b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

@@ -2,6 +2,9 @@
 
 Nanbeige 4.1: a dense GQA transformer. Config approximate.
 
+Architecture : RoPE · GQA · SwiGLU · RMSNorm (pre-norm dense)
+Reference    : llama3_8b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Nanbeige 4.1 (3B))
 Tech report: https://arxiv.org/pdf/2602.13367
 

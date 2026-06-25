@@ -3,6 +3,9 @@
 Gemma 4 12B: Gemma-3-style (sliding/global + sandwich norm).
 Config approximate.
 
+Architecture : sliding-window + global attn · sandwich norm · QK-Norm · GeGLU
+Reference    : gemma3_27b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Gemma 4 (12B))
 Tech report: https://developers.googleblog.com/gemma-4-12b-the-developer-guide/
 
@@ -54,6 +57,9 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "gemma4-12b"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class GemmaRMSNorm(nn.Module):
     """RMSNorm with Gemma's ``(1 + weight)`` gain (weight starts at zero -> identity gain)."""
 
@@ -95,6 +101,8 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 class Attention(nn.Module):
+    """GQA with per-head QK-Norm, decoupled head_dim, and a fixed Q scale (not 1/sqrt(hd))."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head = cfg.n_head
@@ -158,7 +166,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: scaled embeddings, sliding/global block stack, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -205,6 +218,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/gemma3_27b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

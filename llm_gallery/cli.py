@@ -47,6 +47,79 @@ def _build(slug: str, preset: str, **overrides):
 # --------------------------------------------------------------------------------------------------
 # subcommands
 # --------------------------------------------------------------------------------------------------
+# Pedagogical notes shown by `path` — one line per model, explaining what's new vs the prior tier.
+_PATH_NOTES: dict[str, str] = {
+    # Tier 1
+    "gpt2-xl":             "learned-abs positions · MHA · GELU MLP · LayerNorm — the classic baseline",
+    "llama3-8b":           "RoPE · GQA · SwiGLU · RMSNorm (pre-norm) — the modern dense template",
+    "gemma3-27b":          "sliding-window attn · sandwich norm · QK-Norm · GeGLU · decoupled head_dim",
+    "deepseek-v3":         "Multi-head Latent Attention (MLA) · fine-grained MoE · shared always-on expert",
+    "xlstm-7b":            "mLSTM matrix memory — NO attention; fully recurrent over time",
+    "nemotron3-nano-30b":  "Mamba-2 SSM layers interleaved with full-attention layers",
+    "qwen3-next-80b-a3b":  "Gated DeltaNet (linear attn) interleaved with gated full-attention",
+    "kimi-linear":         "Lightning linear attention · MLA · hybrid linear/full-attention",
+    # Tier 2
+    "llama3.2-1b":         "1B Llama — good scale comparison point with llama3-8b",
+    "olmo2-7b":            "post-norm placement · QK-Norm — contrast pre-norm vs post-norm",
+    "deepseek-r1":         "same MLA + MoE as V3, trained for chain-of-thought reasoning",
+    "mistral-small-3.1":   "GQA dense — clean secondary reference for the Llama recipe",
+    "qwen3-0.6b":          "Llama recipe + per-head QK-Norm · 0.6B scale for fast iteration",
+    "qwen3-30b-a3b":       "top-k sparse routing · load-balance loss — standard MoE baseline",
+    "smollm3-3b":          "periodic NoPE: some layers omit positional encoding entirely",
+    "gpt-oss-20b":         "attention sinks · alternating global/local attention layer pattern",
+    "tiny-aya":            "parallel blocks: attention ∥ FFN share the same residual (not sequential)",
+    "phi-4":               "compact 14B dense GQA from Microsoft — clean modern academic baseline",
+}
+
+
+def cmd_path(args: argparse.Namespace) -> None:
+    header = "Learning Path — llm-gallery"
+    print(f"\n{header}")
+    print("=" * len(header))
+
+    tier_labels = {
+        1: "Tier 1 · Essential — start here, read in order",
+        2: "Tier 2 · Important — once you've read Tier 1",
+        3: "Tier 3 · Variants — read the base file instead",
+    }
+    tier_descs = {
+        1: "Each file introduces a distinct architecture family.",
+        2: "Adds secondary innovations not covered by Tier 1.",
+        3: f"Size/config variants of Tier 1/2 models (use `llm-gallery list` to browse).",
+    }
+
+    max_tiers = 3 if args.all else 2
+    for t in range(1, max_tiers + 1):
+        entries = registry.tier_entries(t)
+        if not entries:
+            continue
+        label = tier_labels[t]
+        desc = tier_descs[t]
+        print(f"\n{label}  ({len(entries)} models)")
+        print(f"  {desc}")
+        print()
+        if t == 3 and not args.all:
+            continue
+        slug_w = max(len(e.slug) for e in entries) + 2
+        name_w = max(len(e.name) for e in entries) + 2
+        for i, e in enumerate(entries, 1):
+            note = _PATH_NOTES.get(e.slug, e.archetype)
+            if t == 1:
+                print(f"  {i:2}.  {e.slug:<{slug_w}}  {e.name:<{name_w}}  {note}")
+            else:
+                print(f"       {e.slug:<{slug_w}}  {e.name:<{name_w}}  {note}")
+
+    if not args.all:
+        n3 = len(registry.tier_entries(3))
+        print(f"\n       ({n3} variant files — pass --all to list them)")
+    print()
+    print("  Tips:")
+    print("    llm-gallery info <slug>   — show module docstring + tech-report URL")
+    print("    llm-gallery smoke <slug>  — run a quick forward/backward sanity check")
+    print("    llm-gallery list          — see every model with status and archetype")
+    print()
+
+
 def cmd_list(args: argparse.Namespace) -> None:
     rows = registry.REGISTRY
     if args.done:
@@ -158,6 +231,10 @@ def cmd_generate(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="llm_gallery", description=__doc__)
     sub = p.add_subparsers(dest="command", required=True)
+
+    pp = sub.add_parser("path", help="show the recommended learning path through the gallery")
+    pp.add_argument("--all", action="store_true", help="include Tier 3 variant files in the output")
+    pp.set_defaults(func=cmd_path)
 
     pl = sub.add_parser("list", help="list all models in the gallery")
     pl.add_argument("--done", action="store_true", help="show only implemented models")

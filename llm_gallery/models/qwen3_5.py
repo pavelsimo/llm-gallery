@@ -3,6 +3,9 @@
 Qwen3.5: larger Gated DeltaNet + gated-attention hybrid with MoE. Config approximate.
 See qwen3_next_80b_a3b.py.
 
+Architecture : Gated DeltaNet (linear attn) · gated GQA hybrid · sparse MoE
+Reference    : qwen3_next_80b_a3b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Qwen3.5 (397B))
 Tech report: 
 
@@ -56,7 +59,12 @@ PRESETS: dict[str, Config] = {
 DEFAULT_PRESET = "qwen3.5"
 
 
+# --------------------------------------------------------------------------------------------------
+# Building blocks
+# --------------------------------------------------------------------------------------------------
 class RMSNorm(nn.Module):
+    """Root-mean-square normalization; scales tokens without centering."""
+
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
@@ -163,6 +171,8 @@ class GatedAttention(nn.Module):
 
 
 class MLP(nn.Module):
+    """SwiGLU expert MLP used as a single routed expert in the MoE layer."""
+
     def __init__(self, n_embd, intermediate):
         super().__init__()
         self.gate_proj = nn.Linear(n_embd, intermediate, bias=False)
@@ -174,6 +184,8 @@ class MLP(nn.Module):
 
 
 class MoE(nn.Module):
+    """Sparse top-k MoE with optional always-on shared expert."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_experts, self.top_k = cfg.n_experts, cfg.n_experts_per_tok
@@ -202,6 +214,8 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
+    """Hybrid block: GatedDeltaNet (linear attn) or GatedAttention, always followed by MoE FFN."""
+
     def __init__(self, cfg: Config, is_attn: bool):
         super().__init__()
         self.is_attn = is_attn
@@ -219,7 +233,12 @@ class Block(nn.Module):
         return x
 
 
+# --------------------------------------------------------------------------------------------------
+# Model
+# --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
+    """Full language model: embed tokens, run GatedDeltaNet/attention hybrid blocks, project to logits."""
+
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
@@ -257,6 +276,9 @@ class Model(nn.Module):
         return self.lm_head(self.norm(x))
 
 
+# --------------------------------------------------------------------------------------------------
+# Standalone smoke test: `python llm_gallery/models/qwen3_next_80b_a3b.py`
+# --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     torch.manual_seed(0)
     cfg = PRESETS["tiny"]

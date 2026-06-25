@@ -3,6 +3,9 @@
 LFM2.5 1.2B: modeled as a dense GQA transformer.
 NOTE: Liquid LFM2 actually uses short-conv + attention; this is a dense approximation.
 
+Architecture : RoPE · GQA · SwiGLU · RMSNorm (pre-norm dense)
+Reference    : llama3_8b.py  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (LFM2.5 (1.2B))
 Tech report: 
 

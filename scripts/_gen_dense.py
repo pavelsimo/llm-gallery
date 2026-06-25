@@ -58,6 +58,9 @@ _PREAMBLE = '''"""{name}
 
 {desc}
 
+Architecture : {family_desc}
+Reference    : {ref}  ← read this first; all building blocks are annotated there
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery ({name})
 Tech report: {tech}
 
@@ -350,6 +353,32 @@ CONFIG_TEMPLATES = {
     "deltanet": CONFIG_HYBRID,
     "linear": CONFIG_HYBRID,
     "olmo": CONFIG_OLMO,
+}
+
+FAMILY_DESC = {
+    "llama": "RoPE · GQA · SwiGLU · RMSNorm (pre-norm dense)",
+    "qwen": "RoPE · GQA · per-head QK-Norm · SwiGLU · RMSNorm",
+    "gemma": "sliding-window + global attn · sandwich norm · QK-Norm · GeGLU",
+    "moe": "GQA · top-k sparse MoE · RoPE · SwiGLU · RMSNorm",
+    "gptoss": "MoE · attention sinks · alternating local/global attention",
+    "mla": "Multi-head Latent Attention (MLA) · fine-grained MoE · shared experts",
+    "mamba": "Mamba-2 SSM · periodic GQA hybrid · sparse MoE · RMSNorm",
+    "deltanet": "Gated DeltaNet (linear attn) · gated GQA hybrid · sparse MoE",
+    "linear": "Lightning linear attention · GQA hybrid · sparse MoE",
+    "olmo": "GQA · QK-Norm · post-norm placement · RoPE",
+}
+
+FAMILY_REF = {
+    "llama": "llama3_8b.py",
+    "qwen": "qwen3_0_6b.py",
+    "gemma": "gemma3_27b.py",
+    "moe": "qwen3_30b_a3b.py",
+    "gptoss": "gpt_oss_20b.py",
+    "mla": "deepseek_v3.py",
+    "mamba": "nemotron3_nano_30b.py",
+    "deltanet": "qwen3_next_80b_a3b.py",
+    "linear": "kimi_linear.py",
+    "olmo": "olmo2_7b.py",
 }
 
 SPECS = [
@@ -727,7 +756,16 @@ SPECS = [
 def main() -> None:
     for s in SPECS:
         fam = s["family"]
-        text = _PREAMBLE.format(base=BASES[fam], **s) + CONFIG_TEMPLATES[fam].format(**s) + BODIES[fam]
+        text = (
+            _PREAMBLE.format(
+                base=BASES[fam],
+                family_desc=FAMILY_DESC[fam],
+                ref=FAMILY_REF[fam],
+                **s,
+            )
+            + CONFIG_TEMPLATES[fam].format(**s)
+            + BODIES[fam]
+        )
         (MODELS / f"{s['module']}.py").write_text(text)
         print(f"wrote llm_gallery/models/{s['module']}.py  ({fam}-style)")
 
