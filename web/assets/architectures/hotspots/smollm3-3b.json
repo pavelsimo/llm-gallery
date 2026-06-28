@@ -1,0 +1,239 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 830,
+      "y": 355
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 841,
+      "y": 498
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1799,
+      "y": 541
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-activation",
+      "label": "Activation",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1800,
+      "y": 742
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2156,
+      "y": 742
+    },
+    {
+      "h": 96,
+      "id": "mlp-feed-forward",
+      "label": "Feed forward",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "SwiGLU",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 839,
+      "y": 865
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1800,
+      "y": 937
+    },
+    {
+      "h": 96,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 839,
+      "y": 1041
+    },
+    {
+      "h": 169,
+      "id": "attention-masked-grouped-query-attention",
+      "label": "Masked grouped-query attention",
+      "role": "attention",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 444,
+      "x": 773,
+      "y": 1392
+    },
+    {
+      "h": 103,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "position",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 393,
+      "y": 1427
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 837,
+      "y": 1639
+    },
+    {
+      "h": 101,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 748,
+      "y": 2054
+    },
+    {
+      "h": 99,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 837,
+      "y": 2385
+    }
+  ],
+  "image_sha256": "273272ef3fa427cd78273a1b0ec89bf76a3ed4fc75bb8ef6aa062ed1c87d68d8",
+  "slug": "smollm3-3b"
+}

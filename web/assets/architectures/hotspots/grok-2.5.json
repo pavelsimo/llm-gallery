@@ -1,0 +1,257 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 1462,
+      "y": 394
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 2568,
+      "y": 397
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-output-linear-layer-2",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 69,
+      "y": 401
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 1473,
+      "y": 537
+    },
+    {
+      "h": 114,
+      "id": "expert-activation-activation",
+      "label": "Activation",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2569,
+      "y": 598
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2925,
+      "y": 598
+    },
+    {
+      "h": 115,
+      "id": "expert-activation-activation-2",
+      "label": "Activation",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 71,
+      "y": 602
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 426,
+      "y": 602
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer-3",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2569,
+      "y": 792
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer-4",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 71,
+      "y": 797
+    },
+    {
+      "h": 245,
+      "id": "attention-grouped-query-attention",
+      "label": "Grouped-query Attention",
+      "role": "attention",
+      "rx": 44,
+      "ry": 44,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 457,
+      "x": 1399,
+      "y": 1361
+    },
+    {
+      "h": 96,
+      "id": "expert-feed-forward",
+      "label": "Feed forward",
+      "role": "expert",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Expert",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 2911,
+      "y": 1590
+    },
+    {
+      "h": 102,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 1380,
+      "y": 2092
+    },
+    {
+      "h": 99,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 1470,
+      "y": 2424
+    }
+  ],
+  "image_sha256": "846a53c2494e591df93751377518a5dbdfbee7e8591dc5a012fa1cb91aba13f4",
+  "slug": "grok-2.5"
+}

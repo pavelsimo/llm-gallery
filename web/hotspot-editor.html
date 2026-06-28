@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hotspot Editor</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fa;
+        --surface: #ffffff;
+        --line: #d8e0e8;
+        --text: #18202a;
+        --muted: #637083;
+        --accent: #2563eb;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        display: grid;
+        grid-template-columns: minmax(180px, 260px) minmax(220px, 1fr) minmax(120px, 160px) minmax(90px, 130px) auto auto;
+        gap: 10px;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--surface);
+      }
+
+      select,
+      button,
+      input {
+        height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        font: inherit;
+      }
+
+      select,
+      input {
+        min-width: 0;
+        padding: 0 10px;
+      }
+
+      button {
+        padding: 0 12px;
+        cursor: pointer;
+        font-weight: 760;
+      }
+
+      button.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      .check-label {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        height: 38px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      .check-label input {
+        width: 16px;
+        height: 16px;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        min-height: calc(100vh - 63px);
+      }
+
+      .stage {
+        overflow: auto;
+        padding: 18px;
+      }
+
+      .artboard {
+        position: relative;
+        width: max-content;
+        border: 1px solid var(--line);
+        background: #ffffff;
+      }
+
+      .artboard img {
+        display: block;
+        width: min(82vw, 980px);
+        height: auto;
+        user-select: none;
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .hotspot {
+        fill: rgb(37 99 235 / 10%);
+        stroke: var(--accent);
+        stroke-width: 3;
+        vector-effect: non-scaling-stroke;
+      }
+
+      .hotspot.active {
+        fill: rgb(37 99 235 / 22%);
+        stroke-width: 5;
+      }
+
+      aside {
+        overflow: auto;
+        border-left: 1px solid var(--line);
+        background: var(--surface);
+      }
+
+      .meta,
+      .list {
+        padding: 14px;
+      }
+
+      .meta {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .editor-panel {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .editor-panel h2 {
+        margin: 0;
+        font-size: 13px;
+        letter-spacing: 0;
+      }
+
+      .geometry-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .geometry-grid label {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .nudge-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+
+      .nudge-grid button {
+        padding: 0;
+      }
+
+      .meta p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .row strong,
+      .row span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .row span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @media (max-width: 900px) {
+        header,
+        main {
+          grid-template-columns: 1fr;
+        }
+
+        aside {
+          border-top: 1px solid var(--line);
+          border-left: 0;
+        }
+
+        .artboard img {
+          width: calc(100vw - 36px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <select id="modelSelect" aria-label="Model"></select>
+      <select id="targetSelect" aria-label="Target"></select>
+      <input id="labelInput" aria-label="Label" placeholder="Label" />
+      <select id="shapeSelect" aria-label="Shape">
+        <option value="rect">Rect</option>
+        <option value="roundrect">Roundrect</option>
+      </select>
+      <label class="check-label"><input id="checkedInput" type="checkbox" /> Checked</label>
+      <button id="deleteButton" type="button">Delete</button>
+      <button id="exportButton" class="primary" type="button">Export</button>
+    </header>
+    <main>
+      <section class="stage">
+        <div class="artboard" id="artboard">
+          <img id="artwork" alt="" draggable="false" />
+          <svg id="overlay" class="overlay"></svg>
+        </div>
+      </section>
+      <aside>
+        <div class="meta">
+          <strong id="modelTitle"></strong>
+          <p id="statusLine"></p>
+        </div>
+        <div class="editor-panel">
+          <h2>Geometry</h2>
+          <label class="check-label">Zoom <input id="zoomInput" type="range" min="25" max="240" value="100" /></label>
+          <div class="geometry-grid">
+            <label>X <input id="xInput" type="number" step="1" /></label>
+            <label>Y <input id="yInput" type="number" step="1" /></label>
+            <label>W <input id="wInput" type="number" step="1" min="1" /></label>
+            <label>H <input id="hInput" type="number" step="1" min="1" /></label>
+            <label>RX <input id="rxInput" type="number" step="1" min="0" /></label>
+            <label>RY <input id="ryInput" type="number" step="1" min="0" /></label>
+          </div>
+          <div class="nudge-grid">
+            <button type="button" data-move="-1,0,0,0">Left</button>
+            <button type="button" data-move="1,0,0,0">Right</button>
+            <button type="button" data-move="0,-1,0,0">Up</button>
+            <button type="button" data-move="0,1,0,0">Down</button>
+            <button type="button" data-move="0,0,-1,0">Narrow</button>
+            <button type="button" data-move="0,0,1,0">Widen</button>
+            <button type="button" data-move="0,0,0,-1">Shorten</button>
+            <button type="button" data-move="0,0,0,1">Taller</button>
+          </div>
+        </div>
+        <div class="list" id="hotspotList"></div>
+      </aside>
+    </main>
+    <script>
+      "use strict";
+
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const $ = (selector) => document.querySelector(selector);
+      const state = {
+        index: null,
+        model: null,
+        hotspots: [],
+        active: -1,
+        drag: null,
+        checked: false,
+        zoom: 100,
+      };
+
+      async function fetchJson(path, fallback = null) {
+        const response = await fetch(path);
+        if (!response.ok) return fallback;
+        return response.json();
+      }
+
+      function sourcePayload() {
+        const artwork = state.model.diagram.artwork;
+        return {
+          slug: state.model.slug,
+          coordinate_space: "artwork",
+          image_sha256: artwork.source_sha256,
+          checked: state.checked,
+          hotspots: state.hotspots,
+        };
+      }
+
+      function sectionTargets() {
+        return state.model.sections
+          .filter((section) => ["model", "block", "attention", "mixer", "mlp", "moe", "expert"].includes(section.role))
+          .map((section) => ({
+            key: `section:${section.label}`,
+            label: `${section.role} / ${section.label}`,
+            role: section.role,
+            target: { type: "section", label: section.label },
+          }));
+      }
+
+      function anchorTargets() {
+        const sections = new Map(state.model.sections.map((section) => [section.id, section]));
+        return state.model.anchors.map((anchor) => {
+          const section = sections.get(anchor.section_id);
+          return {
+            key: `anchor:${section.label}:${anchor.role}`,
+            label: `${anchor.role} / ${section.label}`,
+            role: anchor.role,
+            target: { type: "anchor", section_label: section.label, role: anchor.role },
+          };
+        });
+      }
+
+      function allTargets() {
+        return [...sectionTargets(), ...anchorTargets()];
+      }
+
+      function targetForKey(key) {
+        return allTargets().find((target) => target.key === key) || allTargets()[0];
+      }
+
+      function activeHotspot() {
+        return state.hotspots[state.active] || null;
+      }
+
+      function normalizeHotspot(hotspot) {
+        const shape = hotspot.shape || "rect";
+        return {
+          shape,
+          ...hotspot,
+          rx: shape === "roundrect" ? Number(hotspot.rx || 0) : 0,
+          ry: shape === "roundrect" ? Number(hotspot.ry ?? hotspot.rx ?? 0) : 0,
+        };
+      }
+
+      function hotspotTargetKey(hotspot) {
+        const target = hotspot.target || {};
+        if (target.type === "section") return `section:${target.label}`;
+        if (target.type === "anchor") return `anchor:${target.section_label}:${target.role}`;
+        return "";
+      }
+
+      function imageScale() {
+        const image = $("#artwork");
+        return {
+          x: state.model.diagram.artwork.width / image.clientWidth,
+          y: state.model.diagram.artwork.height / image.clientHeight,
+        };
+      }
+
+      function eventPoint(event) {
+        const rect = $("#artwork").getBoundingClientRect();
+        const scale = imageScale();
+        return {
+          x: Math.round((event.clientX - rect.left) * scale.x),
+          y: Math.round((event.clientY - rect.top) * scale.y),
+        };
+      }
+
+      function clampRect(rect) {
+        const artwork = state.model.diagram.artwork;
+        const x = Math.max(0, Math.min(rect.x, artwork.width - 1));
+        const y = Math.max(0, Math.min(rect.y, artwork.height - 1));
+        return {
+          x,
+          y,
+          w: Math.max(1, Math.min(rect.w, artwork.width - x)),
+          h: Math.max(1, Math.min(rect.h, artwork.height - y)),
+        };
+      }
+
+      function applyZoom() {
+        const image = $("#artwork");
+        const base = Math.min(window.innerWidth * 0.82, 980);
+        image.style.width = `${Math.round(base * (state.zoom / 100))}px`;
+      }
+
+      function rectAttributes(rect, hotspot) {
+        rect.setAttribute("x", hotspot.x);
+        rect.setAttribute("y", hotspot.y);
+        rect.setAttribute("width", hotspot.w);
+        rect.setAttribute("height", hotspot.h);
+        if (hotspot.shape === "roundrect") {
+          rect.setAttribute("rx", hotspot.rx || 0);
+          rect.setAttribute("ry", hotspot.ry || hotspot.rx || 0);
+        } else {
+          rect.setAttribute("rx", 0);
+          rect.setAttribute("ry", 0);
+        }
+      }
+
+      function renderTargets() {
+        $("#targetSelect").replaceChildren(
+          ...allTargets().map((target) => {
+            const option = document.createElement("option");
+            option.value = target.key;
+            option.textContent = target.label;
+            return option;
+          })
+        );
+      }
+
+      function renderOverlay() {
+        const overlay = $("#overlay");
+        overlay.setAttribute("viewBox", `0 0 ${state.model.diagram.artwork.width} ${state.model.diagram.artwork.height}`);
+        overlay.replaceChildren(
+          ...state.hotspots.map((hotspot, index) => {
+            const rect = document.createElementNS(SVG_NS, "rect");
+            rect.classList.add("hotspot");
+            if (index === state.active) rect.classList.add("active");
+            rectAttributes(rect, hotspot);
+            rect.addEventListener("click", (event) => {
+              event.stopPropagation();
+              setActive(index);
+            });
+            return rect;
+          })
+        );
+      }
+
+      function renderList() {
+        $("#hotspotList").replaceChildren(
+          ...state.hotspots.map((hotspot, index) => {
+            const row = document.createElement("button");
+            row.className = "row";
+            row.type = "button";
+            row.addEventListener("click", () => setActive(index));
+            const text = document.createElement("span");
+            text.innerHTML = `<strong>${hotspot.label}</strong><span>${hotspot.x}, ${hotspot.y}, ${hotspot.w}, ${hotspot.h}</span>`;
+            const role = document.createElement("span");
+            role.textContent = hotspot.role;
+            row.append(text, role);
+            return row;
+          })
+        );
+        $("#statusLine").textContent = `${state.hotspots.length} hotspots`;
+      }
+
+      function renderAll() {
+        applyZoom();
+        renderOverlay();
+        renderList();
+        syncGeometryInputs();
+      }
+
+      function setActive(index) {
+        state.active = index;
+        const hotspot = activeHotspot();
+        if (hotspot) {
+          $("#labelInput").value = hotspot.label || "";
+          $("#targetSelect").value = hotspotTargetKey(hotspot);
+          $("#shapeSelect").value = hotspot.shape || "rect";
+        }
+        renderAll();
+      }
+
+      function updateActiveTarget() {
+        const hotspot = activeHotspot();
+        if (!hotspot) return;
+        const target = targetForKey($("#targetSelect").value);
+        hotspot.target = target.target;
+        hotspot.role = target.role;
+        hotspot.label = $("#labelInput").value.trim() || target.label.split(" / ").at(-1);
+        hotspot.shape = $("#shapeSelect").value;
+        if (hotspot.shape !== "roundrect") {
+          hotspot.rx = 0;
+          hotspot.ry = 0;
+        }
+        renderAll();
+      }
+
+      function syncGeometryInputs() {
+        const hotspot = activeHotspot();
+        for (const id of ["xInput", "yInput", "wInput", "hInput", "rxInput", "ryInput"]) {
+          $(`#${id}`).disabled = !hotspot;
+        }
+        if (!hotspot) return;
+        $("#xInput").value = hotspot.x;
+        $("#yInput").value = hotspot.y;
+        $("#wInput").value = hotspot.w;
+        $("#hInput").value = hotspot.h;
+        $("#rxInput").value = hotspot.rx || 0;
+        $("#ryInput").value = hotspot.ry || hotspot.rx || 0;
+      }
+
+      function updateActiveGeometry() {
+        const hotspot = activeHotspot();
+        if (!hotspot) return;
+        const rect = clampRect({
+          x: Number($("#xInput").value || hotspot.x),
+          y: Number($("#yInput").value || hotspot.y),
+          w: Number($("#wInput").value || hotspot.w),
+          h: Number($("#hInput").value || hotspot.h),
+        });
+        Object.assign(hotspot, rect);
+        hotspot.rx = Math.max(0, Number($("#rxInput").value || 0));
+        hotspot.ry = Math.max(0, Number($("#ryInput").value || hotspot.rx || 0));
+        renderAll();
+      }
+
+      function moveActive(dx, dy, dw, dh, scale = 1) {
+        const hotspot = activeHotspot();
+        if (!hotspot) return;
+        Object.assign(
+          hotspot,
+          clampRect({
+            x: hotspot.x + dx * scale,
+            y: hotspot.y + dy * scale,
+            w: hotspot.w + dw * scale,
+            h: hotspot.h + dh * scale,
+          })
+        );
+        renderAll();
+      }
+
+      async function loadModel(slug) {
+        state.model = await fetchJson(`data/${encodeURIComponent(slug)}.json`);
+        const source = await fetchJson(`assets/architectures/hotspots/${encodeURIComponent(slug)}.json`, null);
+        state.hotspots = source && Array.isArray(source.hotspots) ? source.hotspots.map(normalizeHotspot) : [];
+        state.checked = Boolean(source && source.checked);
+        state.active = state.hotspots.length ? 0 : -1;
+        $("#checkedInput").checked = state.checked;
+        $("#modelTitle").textContent = state.model.name;
+        $("#artwork").src = state.model.diagram.artwork.path;
+        renderTargets();
+        if (state.active >= 0) setActive(state.active);
+        renderAll();
+      }
+
+      async function init() {
+        state.index = await fetchJson("data/index.json");
+        $("#modelSelect").replaceChildren(
+          ...state.index.models.map((model) => {
+            const option = document.createElement("option");
+            option.value = model.slug;
+            option.textContent = model.name;
+            return option;
+          })
+        );
+        $("#modelSelect").addEventListener("change", () => loadModel($("#modelSelect").value));
+        $("#targetSelect").addEventListener("change", updateActiveTarget);
+        $("#labelInput").addEventListener("input", updateActiveTarget);
+        $("#shapeSelect").addEventListener("change", updateActiveTarget);
+        $("#checkedInput").addEventListener("change", () => {
+          state.checked = $("#checkedInput").checked;
+          renderList();
+        });
+        $("#zoomInput").addEventListener("input", () => {
+          state.zoom = Number($("#zoomInput").value || 100);
+          renderAll();
+        });
+        for (const id of ["xInput", "yInput", "wInput", "hInput", "rxInput", "ryInput"]) {
+          $(`#${id}`).addEventListener("change", updateActiveGeometry);
+        }
+        document.querySelectorAll("[data-move]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const [dx, dy, dw, dh] = button.dataset.move.split(",").map(Number);
+            moveActive(dx, dy, dw, dh, 1);
+          });
+        });
+        $("#deleteButton").addEventListener("click", () => {
+          if (state.active < 0) return;
+          state.hotspots.splice(state.active, 1);
+          state.active = Math.min(state.active, state.hotspots.length - 1);
+          renderAll();
+        });
+        $("#exportButton").addEventListener("click", () => {
+          const blob = new Blob([JSON.stringify(sourcePayload(), null, 2) + "\n"], { type: "application/json" });
+          const anchor = document.createElement("a");
+          anchor.href = URL.createObjectURL(blob);
+          anchor.download = `${state.model.slug}.json`;
+          anchor.click();
+          URL.revokeObjectURL(anchor.href);
+        });
+        $("#overlay").addEventListener("pointerdown", (event) => {
+          const start = eventPoint(event);
+          state.drag = { start, current: start };
+          $("#overlay").setPointerCapture(event.pointerId);
+        });
+        $("#overlay").addEventListener("pointermove", (event) => {
+          if (!state.drag) return;
+          state.drag.current = eventPoint(event);
+          const target = targetForKey($("#targetSelect").value);
+          const start = state.drag.start;
+          const current = state.drag.current;
+          const rect = clampRect({
+            x: Math.min(start.x, current.x),
+            y: Math.min(start.y, current.y),
+            w: Math.abs(current.x - start.x),
+            h: Math.abs(current.y - start.y),
+          });
+          const draft = {
+            id: `${target.role}-${state.hotspots.length + 1}`,
+            label: $("#labelInput").value.trim() || target.label.split(" / ").at(-1),
+            role: target.role,
+            target: target.target,
+            shape: $("#shapeSelect").value,
+            ...rect,
+            rx: $("#shapeSelect").value === "roundrect" ? Number($("#rxInput").value || 0) : 0,
+            ry: $("#shapeSelect").value === "roundrect" ? Number($("#ryInput").value || $("#rxInput").value || 0) : 0,
+            source: "manual",
+          };
+          renderOverlay();
+          const preview = document.createElementNS(SVG_NS, "rect");
+          preview.classList.add("hotspot", "active");
+          rectAttributes(preview, draft);
+          $("#overlay").append(preview);
+        });
+        $("#overlay").addEventListener("pointerup", (event) => {
+          if (!state.drag) return;
+          const start = state.drag.start;
+          const current = eventPoint(event);
+          state.drag = null;
+          const rect = clampRect({
+            x: Math.min(start.x, current.x),
+            y: Math.min(start.y, current.y),
+            w: Math.abs(current.x - start.x),
+            h: Math.abs(current.y - start.y),
+          });
+          if (rect.w < 6 || rect.h < 6) {
+            renderAll();
+            return;
+          }
+          const target = targetForKey($("#targetSelect").value);
+          state.hotspots.push({
+            id: `${target.role}-${state.hotspots.length + 1}`,
+            label: $("#labelInput").value.trim() || target.label.split(" / ").at(-1),
+            role: target.role,
+            target: target.target,
+            shape: $("#shapeSelect").value,
+            ...rect,
+            rx: $("#shapeSelect").value === "roundrect" ? Number($("#rxInput").value || 0) : 0,
+            ry: $("#shapeSelect").value === "roundrect" ? Number($("#ryInput").value || $("#rxInput").value || 0) : 0,
+            source: "manual",
+          });
+          setActive(state.hotspots.length - 1);
+        });
+        window.addEventListener("keydown", (event) => {
+          if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+          const scale = event.shiftKey ? 10 : 1;
+          if (event.key === "ArrowLeft") moveActive(-1, 0, 0, 0, scale);
+          if (event.key === "ArrowRight") moveActive(1, 0, 0, 0, scale);
+          if (event.key === "ArrowUp") moveActive(0, -1, 0, 0, scale);
+          if (event.key === "ArrowDown") moveActive(0, 1, 0, 0, scale);
+        });
+        await loadModel(state.index.models[0].slug);
+      }
+
+      init().catch((error) => {
+        $("#statusLine").textContent = error.message;
+      });
+    </script>
+  </body>
+</html>

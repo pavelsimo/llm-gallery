@@ -1,0 +1,488 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 137,
+      "id": "attention-output-projection-linear",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 246,
+      "x": 3295,
+      "y": 432
+    },
+    {
+      "h": 138,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 571,
+      "x": 1167,
+      "y": 609
+    },
+    {
+      "h": 138,
+      "id": "attention-scaled-dot-product-attention",
+      "label": "Scaled dot-product attention",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 839,
+      "x": 2998,
+      "y": 779
+    },
+    {
+      "h": 138,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 537,
+      "x": 1184,
+      "y": 823
+    },
+    {
+      "h": 137,
+      "id": "block-norm-1-r-r-m-s-norm",
+      "label": "RRRMSNorm",
+      "role": "norm",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 269,
+      "x": 3002,
+      "y": 1122
+    },
+    {
+      "h": 137,
+      "id": "block-norm-1-r-r-m-s-norm-2",
+      "label": "RRRMSNorm",
+      "role": "norm",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 269,
+      "x": 3278,
+      "y": 1122
+    },
+    {
+      "h": 114,
+      "id": "mlp-swi-g-l-u",
+      "label": "SwiGLU",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "detected",
+      "target": {
+        "label": "SwiGLU",
+        "type": "section"
+      },
+      "w": 112,
+      "x": 1394,
+      "y": 1129
+    },
+    {
+      "h": 137,
+      "id": "attention-output-projection-linear-2",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 246,
+      "x": 3875,
+      "y": 1302
+    },
+    {
+      "h": 137,
+      "id": "attention-output-projection-linear-3",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 245,
+      "x": 3577,
+      "y": 1304
+    },
+    {
+      "h": 137,
+      "id": "attention-output-projection-linear-4",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 245,
+      "x": 3003,
+      "y": 1308
+    },
+    {
+      "h": 137,
+      "id": "attention-output-projection-linear-5",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 246,
+      "x": 3289,
+      "y": 1308
+    },
+    {
+      "h": 137,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "detected",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 537,
+      "x": 1181,
+      "y": 1374
+    },
+    {
+      "h": 137,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 537,
+      "x": 1181,
+      "y": 1638
+    },
+    {
+      "h": 137,
+      "id": "attention-output-projection-linear-6",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 245,
+      "x": 3293,
+      "y": 1898
+    },
+    {
+      "h": 114,
+      "id": "block-l-rx-e-v",
+      "label": "l'.rx'e;;v",
+      "role": "block",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Block",
+        "type": "section"
+      },
+      "w": 112,
+      "x": 1390,
+      "y": 1962
+    },
+    {
+      "h": 248,
+      "id": "attention-l-gated-delta-net-or-5-gated-attention",
+      "label": "l Gated DeltaNet or 5 \u2018 Gated Attention",
+      "role": "attention",
+      "rx": 44,
+      "ry": 44,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 661,
+      "x": 1081,
+      "y": 2164
+    },
+    {
+      "h": 238,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "position",
+      "rx": 42,
+      "ry": 42,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 532,
+      "x": 443,
+      "y": 2166
+    },
+    {
+      "h": 137,
+      "id": "block-norm-1-r-r-m-s-norm-3",
+      "label": "RRRMSNorm",
+      "role": "norm",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 269,
+      "x": 3276,
+      "y": 2234
+    },
+    {
+      "h": 138,
+      "id": "attention-gated-delta-rule",
+      "label": "Gated Delta Rule",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 840,
+      "x": 2999,
+      "y": 2387
+    },
+    {
+      "h": 138,
+      "id": "block-norm-1-norm-1-2",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 537,
+      "x": 1177,
+      "y": 2534
+    },
+    {
+      "h": 137,
+      "id": "block-norm-1-l-z-norm",
+      "label": "LZNorm",
+      "role": "norm",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 246,
+      "x": 3048,
+      "y": 2757
+    },
+    {
+      "h": 145,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 26,
+      "ry": 26,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 815,
+      "x": 1044,
+      "y": 3157
+    },
+    {
+      "h": 137,
+      "id": "attention-output-projection-linear-7",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 245,
+      "x": 3873,
+      "y": 3249
+    },
+    {
+      "h": 136,
+      "id": "attention-output-projection-linear-8",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 246,
+      "x": 3292,
+      "y": 3252
+    },
+    {
+      "h": 137,
+      "id": "attention-output-projection-linear-9",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 246,
+      "x": 3029,
+      "y": 3297
+    },
+    {
+      "h": 136,
+      "id": "attention-output-projection-linear-10",
+      "label": "Linear",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 245,
+      "x": 3609,
+      "y": 3306
+    },
+    {
+      "h": 143,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 25,
+      "ry": 25,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 538,
+      "x": 1178,
+      "y": 3653
+    }
+  ],
+  "image_sha256": "e42339f4fd6b34a93ad78fb9b487e7262e764841db9bb859dff8264ca45b5c66",
+  "slug": "qwen3.6-27b"
+}

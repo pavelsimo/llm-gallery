@@ -1,0 +1,240 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 835,
+      "y": 389
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1940,
+      "y": 392
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 846,
+      "y": 532
+    },
+    {
+      "h": 114,
+      "id": "expert-activation-activation",
+      "label": "Activation",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1942,
+      "y": 593
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2297,
+      "y": 593
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1942,
+      "y": 787
+    },
+    {
+      "h": 96,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 844,
+      "y": 1075
+    },
+    {
+      "h": 103,
+      "id": "attention-qk-norm-q-k-norm",
+      "label": "Q/K norm",
+      "role": "norm",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "qk_norm",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 399,
+      "y": 1336
+    },
+    {
+      "h": 169,
+      "id": "attention-grouped-query-attention",
+      "label": "Grouped-query \u2018 | Attention",
+      "role": "attention",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 444,
+      "x": 778,
+      "y": 1426
+    },
+    {
+      "h": 103,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "position",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 398,
+      "y": 1461
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 841,
+      "y": 1673
+    },
+    {
+      "h": 102,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 753,
+      "y": 2087
+    },
+    {
+      "h": 99,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 842,
+      "y": 2419
+    }
+  ],
+  "image_sha256": "cb1d45987c63952a4fb2e33e42d51587e02eefbaa1602fbb7cc7bb4a04d97553",
+  "slug": "glm-4.7"
+}

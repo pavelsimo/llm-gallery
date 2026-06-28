@@ -1,0 +1,330 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 911,
+      "y": 348
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 1880,
+      "y": 372
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 922,
+      "y": 490
+    },
+    {
+      "h": 115,
+      "id": "mlp-activation-activation",
+      "label": "Activation",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1881,
+      "y": 573
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2237,
+      "y": 573
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1881,
+      "y": 768
+    },
+    {
+      "h": 96,
+      "id": "mlp-feed-forward",
+      "label": "Feed forward",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "SwiGLU",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 920,
+      "y": 857
+    },
+    {
+      "h": 96,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 920,
+      "y": 1033
+    },
+    {
+      "h": 98,
+      "id": "mlp-mlp-gate-linear",
+      "label": "Linear",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 171,
+      "x": 2140,
+      "y": 1455
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 917,
+      "y": 1631
+    },
+    {
+      "h": 98,
+      "id": "block-norm-1-r-r-m-s-norm",
+      "label": "RRRMSNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 185,
+      "x": 2130,
+      "y": 1679
+    },
+    {
+      "h": 98,
+      "id": "mixer-mixer-state-m-l-s-t-m",
+      "label": "mLSTM",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "mLSTM",
+        "type": "anchor"
+      },
+      "w": 566,
+      "x": 1945,
+      "y": 1781
+    },
+    {
+      "h": 101,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 547,
+      "x": 829,
+      "y": 2046
+    },
+    {
+      "h": 98,
+      "id": "mlp-mlp-gate-linear-2",
+      "label": "Linear",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2527,
+      "y": 2355
+    },
+    {
+      "h": 98,
+      "id": "mlp-mlp-gate-linear-3",
+      "label": "Linear",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 171,
+      "x": 2140,
+      "y": 2357
+    },
+    {
+      "h": 99,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 918,
+      "y": 2377
+    },
+    {
+      "h": 98,
+      "id": "mlp-mlp-gate-linear-4",
+      "label": "Linear",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 1965,
+      "y": 2387
+    },
+    {
+      "h": 98,
+      "id": "mlp-mlp-gate-linear-5",
+      "label": "Linear",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2351,
+      "y": 2393
+    }
+  ],
+  "image_sha256": "5492e66c19ee53c0c0eb676ba5dced48019b31e48c547a50e2316794e42e1b00",
+  "slug": "xlstm-7b"
+}

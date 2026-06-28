@@ -1,7 +1,7 @@
 """One test module, parametrized over every model marked ``done`` in the registry.
 
 As you finish a model and flip its registry status to ``done``, these checks start covering it
-automatically — a cheap but effective quality gate across all 78 implementations:
+automatically — a cheap but effective quality gate across all 83 implementations:
 
   * builds the ``tiny`` preset,
   * forward pass returns logits of shape [B, T, vocab] with finite values,

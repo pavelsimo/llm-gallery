@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>llm-gallery visualizer</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body data-page="index">
+    <header class="site-header">
+      <div>
+        <p class="eyebrow">llm-gallery</p>
+        <h1>Interactive model-code visualizer</h1>
+      </div>
+      <a class="header-link" href="../README.md">README</a>
+    </header>
+
+    <main class="index-shell">
+      <section class="toolbar" aria-label="Model filters">
+        <label class="search-field">
+          <span>Search</span>
+          <input id="searchInput" type="search" placeholder="Model, slug, or architecture" autocomplete="off" />
+        </label>
+        <label>
+          <span>Tier</span>
+          <select id="tierFilter">
+            <option value="all">All tiers</option>
+            <option value="1">Tier 1</option>
+            <option value="2">Tier 2</option>
+            <option value="3">Tier 3</option>
+          </select>
+        </label>
+        <label>
+          <span>Template</span>
+          <select id="templateFilter">
+            <option value="all">All templates</option>
+          </select>
+        </label>
+      </section>
+
+      <div class="result-meta" id="resultMeta"></div>
+      <section class="model-grid" id="modelGrid" aria-live="polite"></section>
+    </main>
+  </body>
+</html>

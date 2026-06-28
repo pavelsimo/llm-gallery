@@ -1,0 +1,204 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 826,
+      "y": 390
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 1932,
+      "y": 393
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 837,
+      "y": 533
+    },
+    {
+      "h": 115,
+      "id": "mlp-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 2289,
+      "y": 593
+    },
+    {
+      "h": 114,
+      "id": "mlp-activation-activation",
+      "label": "Activation",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1933,
+      "y": 594
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1933,
+      "y": 788
+    },
+    {
+      "h": 95,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 835,
+      "y": 1076
+    },
+    {
+      "h": 284,
+      "id": "attention-multi-nead-attention-m-l-a-deep-seek-attention-d-s-a",
+      "label": "Multi-nead Attention (MLA) + DeepSeek Attention (DSA",
+      "role": "attention",
+      "rx": 51,
+      "ry": 51,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "MLA",
+        "type": "section"
+      },
+      "w": 445,
+      "x": 769,
+      "y": 1388
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 833,
+      "y": 1721
+    },
+    {
+      "h": 102,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 744,
+      "y": 2088
+    },
+    {
+      "h": 100,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 834,
+      "y": 2419
+    }
+  ],
+  "image_sha256": "539dd4ba26e5e6cfb0f44a2fcd98f25522e2733f90aa9a5fe0b6d2b7d31976e9",
+  "slug": "glm-5"
+}

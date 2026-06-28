@@ -48,6 +48,19 @@ Every model file is also runnable on its own as a smoke test:
 uv run python llm_gallery/models/gpt2_xl.py
 ```
 
+## Interactive visualizer
+
+The repo also includes a static side-by-side model/code visualizer in `web/`:
+
+```bash
+uv run python scripts/build_visualizer_data.py
+python -m http.server 8000 --directory web
+```
+
+Open `http://localhost:8000` to browse every registered model. The generated JSON in `web/data/`
+maps diagram blocks to exact source line ranges, so clicking a block highlights the corresponding
+Python section and clicking code highlights the matching diagram node.
+
 ## Hardware notes
 
 Developed against a GTX 1060 6GB (Pascal). There's **no hardware bf16** on Pascal, so the code defaults to
@@ -63,7 +76,7 @@ llm_gallery/
   harness/       shared tooling: data.py, train.py, generate.py, interface.py
   cli.py         list | info | path | smoke | train | generate
 docs/
-  architectures.md   the taxonomy of ideas the 78 models are built from
+  architectures.md   the taxonomy of ideas the 83 models are built from
 tests/
   test_models.py     parametrized over the registry (shapes, backward, determinism, generate)
 ```
@@ -72,16 +85,16 @@ tests/
 
 ```bash
 uv run python -m llm_gallery.cli path        # print the recommended reading order
-uv run python -m llm_gallery.cli path --all  # include all 78 models
+uv run python -m llm_gallery.cli path --all  # include all 83 models
 ```
 
-The 78 models are grouped into three tiers:
+The 83 models are grouped into three tiers:
 
 | Tier | Count | Meaning |
 |------|-------|---------|
 | **1 — Essential** | 8 | One file per architectural family; start here |
 | **2 — Important** | 10 | Introduce a specific new idea vs. a Tier 1 neighbour |
-| **3 — Variant** | 60 | Config/scale variants; read the base file first |
+| **3 — Variant** | 65 | Config/scale variants; read the base file first |
 
 **Suggested workflow per model:**
 
@@ -94,7 +107,7 @@ See [`docs/architectures.md`](docs/architectures.md) for the conceptual "family 
 
 ## Status
 
-**All 78 models are implemented** and covered by the test suite (`uv run pytest`). Run
+**All 83 models are implemented** and covered by the test suite (`uv run pytest`). Run
 `uv run python -m llm_gallery.cli list` for the per-model list.
 
 How the models were built:

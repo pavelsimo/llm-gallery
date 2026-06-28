@@ -1,0 +1,221 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 829,
+      "y": 453
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 1933,
+      "y": 458
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 840,
+      "y": 596
+    },
+    {
+      "h": 114,
+      "id": "expert-activation-activation",
+      "label": "Activation",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1934,
+      "y": 659
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2290,
+      "y": 659
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1934,
+      "y": 854
+    },
+    {
+      "h": 96,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 838,
+      "y": 1139
+    },
+    {
+      "h": 269,
+      "id": "attention-grouped-query-attention-7-sliding-window-attention-in-5-1-ratio",
+      "label": "Grouped Query Attention (7:.) + Sliding window attention (-+.:.)in 5:1 ratio",
+      "role": "attention",
+      "rx": 48,
+      "ry": 48,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 467,
+      "x": 767,
+      "y": 1453
+    },
+    {
+      "h": 95,
+      "id": "expert-feed-forward",
+      "label": "Feed forward",
+      "role": "expert",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Expert",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 1765,
+      "y": 1664
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 836,
+      "y": 1769
+    },
+    {
+      "h": 102,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 747,
+      "y": 2151
+    },
+    {
+      "h": 99,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 837,
+      "y": 2483
+    }
+  ],
+  "image_sha256": "8a29303edf39a5dcf90aec032f239959c67fbbb53f86e54f923f3eba8fb995e5",
+  "slug": "mimo-v2-flash"
+}

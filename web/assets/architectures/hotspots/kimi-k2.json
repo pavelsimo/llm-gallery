@@ -1,0 +1,221 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 95,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 844,
+      "y": 377
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 1950,
+      "y": 379
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 855,
+      "y": 519
+    },
+    {
+      "h": 114,
+      "id": "mlp-activation-activation",
+      "label": "Activation",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1951,
+      "y": 580
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2307,
+      "y": 580
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1951,
+      "y": 775
+    },
+    {
+      "h": 96,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 853,
+      "y": 1062
+    },
+    {
+      "h": 169,
+      "id": "attention-multi-head-attention",
+      "label": "Multi-head Attention",
+      "role": "attention",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "MLA",
+        "type": "section"
+      },
+      "w": 445,
+      "x": 787,
+      "y": 1413
+    },
+    {
+      "h": 95,
+      "id": "mlp-feed-forward",
+      "label": "Feed forward",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "MLP",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 1782,
+      "y": 1585
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 851,
+      "y": 1660
+    },
+    {
+      "h": 101,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 762,
+      "y": 2075
+    },
+    {
+      "h": 99,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 852,
+      "y": 2406
+    }
+  ],
+  "image_sha256": "11867bf6b5833a8b44832aaf979eebf87c1f635493059c7e58e1f6e3a931686d",
+  "slug": "kimi-k2"
+}

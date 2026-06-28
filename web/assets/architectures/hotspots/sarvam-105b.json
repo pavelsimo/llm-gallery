@@ -1,0 +1,257 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 918,
+      "y": 379
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 2024,
+      "y": 382
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 929,
+      "y": 522
+    },
+    {
+      "h": 114,
+      "id": "mlp-activation-activation",
+      "label": "Activation",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2025,
+      "y": 583
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 2381,
+      "y": 583
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2025,
+      "y": 777
+    },
+    {
+      "h": 95,
+      "id": "moe-deepseek-mo-e",
+      "label": "DeepseekMoE",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "detected",
+      "target": {
+        "label": "DeepseekMoE",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 927,
+      "y": 889
+    },
+    {
+      "h": 95,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 927,
+      "y": 1065
+    },
+    {
+      "h": 105,
+      "id": "block-norm-1-k-v-layer-norm",
+      "label": "KV LayerNorm",
+      "role": "norm",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 506,
+      "y": 1375
+    },
+    {
+      "h": 169,
+      "id": "attention-multi-head-latent-attention-m-l-a",
+      "label": "Multi-Head Latent Attention (MLA",
+      "role": "attention",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "MLA",
+        "type": "section"
+      },
+      "w": 446,
+      "x": 883,
+      "y": 1419
+    },
+    {
+      "h": 103,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "position",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "rope",
+        "section_label": "MLA",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 501,
+      "y": 1490
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 925,
+      "y": 1662
+    },
+    {
+      "h": 102,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 836,
+      "y": 2077
+    },
+    {
+      "h": 100,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 926,
+      "y": 2408
+    }
+  ],
+  "image_sha256": "054f1bed4ad6bad5e24ee1edc38b44d83b0e18d2e1a692c9b1cb82032f1be5ea",
+  "slug": "sarvam-105b"
+}

@@ -1,0 +1,378 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 98,
+      "id": "mixer-1-linear-a",
+      "label": "1 Linear A",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Mamba",
+        "type": "section"
+      },
+      "w": 171,
+      "x": 2203,
+      "y": 263
+    },
+    {
+      "h": 99,
+      "id": "block-norm-1-r-r-m-s-norm-a",
+      "label": "RRRMSNorm A",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 222,
+      "x": 2182,
+      "y": 405
+    },
+    {
+      "h": 240,
+      "id": "mixer-mixer-state-latent-mo-e-mamba-2-j",
+      "label": "Latent MoE Mamba-2 -.J",
+      "role": "mixer",
+      "rx": 43,
+      "ry": 43,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "Mamba",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 1604,
+      "y": 578
+    },
+    {
+      "h": 98,
+      "id": "mixer-mixer-state-s-s-m-state-update",
+      "label": "SSM state update",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "Mamba",
+        "type": "anchor"
+      },
+      "w": 222,
+      "x": 2178,
+      "y": 656
+    },
+    {
+      "h": 98,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 387,
+      "x": 400,
+      "y": 733
+    },
+    {
+      "h": 98,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 365,
+      "x": 411,
+      "y": 876
+    },
+    {
+      "h": 360,
+      "id": "mixer-mixer-state-latent-mo-e-mamba-2",
+      "label": "Latent MoE \ufb01 } Mamba-2",
+      "role": "mixer",
+      "rx": 58,
+      "ry": 58,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "Mamba",
+        "type": "anchor"
+      },
+      "w": 325,
+      "x": 1600,
+      "y": 890
+    },
+    {
+      "h": 98,
+      "id": "mixer-linear-a",
+      "label": "Linear A",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Mamba",
+        "type": "section"
+      },
+      "w": 170,
+      "x": 2330,
+      "y": 1008
+    },
+    {
+      "h": 257,
+      "id": "mixer-mixer-state-latent-mo-e-mamba-2-2",
+      "label": "Latent MoE Mamba-2",
+      "role": "mixer",
+      "rx": 46,
+      "ry": 46,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "Mamba",
+        "type": "anchor"
+      },
+      "w": 325,
+      "x": 1610,
+      "y": 1318
+    },
+    {
+      "h": 240,
+      "id": "mixer-mixer-state-latent-mo-e-mamba-2-3",
+      "label": "Latent MoE Mamba-2",
+      "role": "mixer",
+      "rx": 43,
+      "ry": 43,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "Mamba",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 1609,
+      "y": 2008
+    },
+    {
+      "h": 116,
+      "id": "model-lm-head-output",
+      "label": "output",
+      "role": "output",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 2413,
+      "y": 2257
+    },
+    {
+      "h": 96,
+      "id": "moe-shared-expert",
+      "label": "Shared expert",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 2958,
+      "y": 2371
+    },
+    {
+      "h": 104,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 550,
+      "x": 318,
+      "y": 2431
+    },
+    {
+      "h": 116,
+      "id": "model-lm-head-routed-output",
+      "label": "Routed output",
+      "role": "output",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 2412,
+      "y": 2439
+    },
+    {
+      "h": 150,
+      "id": "model-lm-head-latent-output",
+      "label": "Latent output",
+      "role": "output",
+      "rx": 27,
+      "ry": 27,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 212,
+      "x": 2487,
+      "y": 2622
+    },
+    {
+      "h": 240,
+      "id": "mixer-mixer-state-latent-mo-e-mamba-2-4",
+      "label": "Latent MoE Mamba-2",
+      "role": "mixer",
+      "rx": 43,
+      "ry": 43,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "Mamba",
+        "type": "anchor"
+      },
+      "w": 308,
+      "x": 1608,
+      "y": 2709
+    },
+    {
+      "h": 102,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 365,
+      "x": 408,
+      "y": 2762
+    },
+    {
+      "h": 96,
+      "id": "moe-latent-expert",
+      "label": "Latent expert",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 2168,
+      "y": 3069
+    },
+    {
+      "h": 96,
+      "id": "moe-latent-expert-2",
+      "label": "Latent expert",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 2898,
+      "y": 3340
+    },
+    {
+      "h": 151,
+      "id": "model-latent-input",
+      "label": "Latent input",
+      "role": "input",
+      "rx": 27,
+      "ry": 27,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 211,
+      "x": 2681,
+      "y": 3653
+    },
+    {
+      "h": 116,
+      "id": "model-inp-ut",
+      "label": "Inp.ut",
+      "role": "input",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 3173,
+      "y": 3855
+    }
+  ],
+  "image_sha256": "dff7518bed5724fb939c77776d99a1e9cb3fd909c1c9e108cceacb8b8ee9cddc",
+  "slug": "nemotron3-super-120b"
+}

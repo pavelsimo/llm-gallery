@@ -1,0 +1,221 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 1155,
+      "y": 355
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2107,
+      "y": 438
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 1166,
+      "y": 498
+    },
+    {
+      "h": 114,
+      "id": "mlp-activation-activation",
+      "label": "Activation",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2109,
+      "y": 639
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 2465,
+      "y": 639
+    },
+    {
+      "h": 115,
+      "id": "mlp-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2109,
+      "y": 833
+    },
+    {
+      "h": 317,
+      "id": "attention-grouped-query-attention-34-4-sliding-window-attention-05-in-3-1-ratio",
+      "label": "Grouped Query Attention (34:4) + Sliding Window Attention (='05) In 3:1 ratio",
+      "role": "attention",
+      "rx": 57,
+      "ry": 57,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 387,
+      "x": 918,
+      "y": 1120
+    },
+    {
+      "h": 104,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "position",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 551,
+      "y": 1224
+    },
+    {
+      "h": 97,
+      "id": "moe-parallel-mo-e",
+      "label": "Parallel MoE",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "detected",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 339,
+      "x": 1331,
+      "y": 1251
+    },
+    {
+      "h": 96,
+      "id": "block-parallel-r-r-m-s-norm",
+      "label": "RRRMSNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "parallel",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 1167,
+      "y": 1616
+    },
+    {
+      "h": 102,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 547,
+      "x": 1074,
+      "y": 2144
+    },
+    {
+      "h": 100,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 1163,
+      "y": 2384
+    }
+  ],
+  "image_sha256": "5275109851fd68aff7abec532559b7ddb77d68f2d6bf4187ba7481e7d1df3a0a",
+  "slug": "north-mini-code"
+}

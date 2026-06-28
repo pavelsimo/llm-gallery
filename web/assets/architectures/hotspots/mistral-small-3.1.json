@@ -1,0 +1,203 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 782,
+      "y": 382
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 793,
+      "y": 525
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1771,
+      "y": 623
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-activation",
+      "label": "Activation",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1773,
+      "y": 824
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 2129,
+      "y": 824
+    },
+    {
+      "h": 96,
+      "id": "mlp-feed-forward",
+      "label": "Feed forward",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "SwiGLU",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 791,
+      "y": 962
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "SwiGLU",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1773,
+      "y": 1018
+    },
+    {
+      "h": 168,
+      "id": "attention-attention",
+      "label": "attention",
+      "role": "attention",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 441,
+      "x": 751,
+      "y": 1498
+    },
+    {
+      "h": 103,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "position",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 362,
+      "y": 1526
+    },
+    {
+      "h": 102,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 700,
+      "y": 2080
+    },
+    {
+      "h": 100,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 789,
+      "y": 2411
+    }
+  ],
+  "image_sha256": "0c89bad92c75bb3551c03eb16b8769b088491ce3991e30198e06c4dca2a3fc2e",
+  "slug": "mistral-small-3.1"
+}

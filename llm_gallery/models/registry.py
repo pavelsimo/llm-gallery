@@ -108,6 +108,11 @@ REGISTRY: list[Entry] = [
     Entry("lfm2.5-8b-a1b",    "lfm2_5_8b_a1b",     "LFM2.5 (8B-A1B)",                    "",           "sparse MoE",                                  DONE),
     Entry("mellum2-thinking",  "mellum2_thinking",  "JetBrains Mellum2 Thinking (12B-A2.5B)", "",      "sparse MoE",                                  DONE),
     Entry("nemotron3-ultra",   "nemotron3_ultra",   "Nemotron 3 Ultra (550B-A55B)",       "",           "sparse hybrid Mamba + MoE",                   DONE),
+    Entry("north-mini-code",   "north_mini_code",   "North Mini Code (30B-A3B)",          "2026-06-05", "parallel sparse MoE + sliding/global GQA",     DONE),
+    Entry("kimi-k2.7-code",    "kimi_k2_7_code",    "Kimi K2.7 Code (1T)",                "2026-06-12", "sparse MoE + MLA",                            DONE),
+    Entry("minimax-m3",        "minimax_m3",        "MiniMax M3 (428B)",                  "2026-06-13", "sparse MoE + MiniMax Sparse Attention",       DONE),
+    Entry("vibethinker-3b",    "vibethinker_3b",    "VibeThinker-3B (3B)",                "2026-06-15", "dense GQA",                                   DONE),
+    Entry("glm-5.2",           "glm_5_2",           "GLM-5.2 (744B)",                     "2026-06-17", "sparse MoE + MLA + DSA/IndexShare",           DONE),
 ]
 # fmt: on
 

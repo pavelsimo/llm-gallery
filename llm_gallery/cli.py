@@ -85,7 +85,7 @@ def cmd_path(args: argparse.Namespace) -> None:
     tier_descs = {
         1: "Each file introduces a distinct architecture family.",
         2: "Adds secondary innovations not covered by Tier 1.",
-        3: f"Size/config variants of Tier 1/2 models (use `llm-gallery list` to browse).",
+        3: "Size/config variants of Tier 1/2 models (use `llm-gallery list` to browse).",
     }
 
     max_tiers = 3 if args.all else 2

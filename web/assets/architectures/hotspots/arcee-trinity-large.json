@@ -1,0 +1,362 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 832,
+      "y": 437
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1936,
+      "y": 442
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 843,
+      "y": 580
+    },
+    {
+      "h": 114,
+      "id": "expert-activation-activation",
+      "label": "Activation",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 1938,
+      "y": 643
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2293,
+      "y": 643
+    },
+    {
+      "h": 115,
+      "id": "expert-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 1938,
+      "y": 837
+    },
+    {
+      "h": 98,
+      "id": "block-norm-1-post-r-r-m-s-norm",
+      "label": "Post-RRRMSNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 843,
+      "y": 881
+    },
+    {
+      "h": 96,
+      "id": "moe-mo-e",
+      "label": "MoE",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "detected",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 841,
+      "y": 1017
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-pre-r-r-m-s-norm",
+      "label": "Pre-RRRMSNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 835,
+      "y": 1158
+    },
+    {
+      "h": 95,
+      "id": "block-norm-1-post-r-r-m-s-norm-2",
+      "label": "Post-RRRMSNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 836,
+      "y": 1428
+    },
+    {
+      "h": 96,
+      "id": "attention-qk-norm-q-k-norm",
+      "label": "Q/K norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "qk_norm",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 373,
+      "y": 1496
+    },
+    {
+      "h": 271,
+      "id": "attention-grouped-query-attention-g-q-a-sliding-window-attention-s-w-a-in-3-1-ratio",
+      "label": "Grouped Query Attention (GQA) + Sliding Window Attention (SWA) in 3:1 ratio",
+      "role": "attention",
+      "rx": 48,
+      "ry": 48,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 468,
+      "x": 786,
+      "y": 1566
+    },
+    {
+      "h": 96,
+      "id": "expert-feed-forward",
+      "label": "Feed forward",
+      "role": "expert",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Expert",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 2279,
+      "y": 1635
+    },
+    {
+      "h": 95,
+      "id": "expert-feed-forward-2",
+      "label": "Feed forward",
+      "role": "expert",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Expert",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 1768,
+      "y": 1648
+    },
+    {
+      "h": 96,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "position",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 371,
+      "y": 1653
+    },
+    {
+      "h": 96,
+      "id": "attention-gated-attention",
+      "label": "Gated attention",
+      "role": "attention",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 378,
+      "y": 1818
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-pre-r-r-m-s-norm-2",
+      "label": "Pre-RRRMSNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 836,
+      "y": 1878
+    },
+    {
+      "h": 116,
+      "id": "moe-router-router-gate",
+      "label": "Router / gate",
+      "role": "router",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "router",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 212,
+      "x": 2102,
+      "y": 1954
+    },
+    {
+      "h": 102,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 750,
+      "y": 2135
+    },
+    {
+      "h": 100,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 840,
+      "y": 2466
+    }
+  ],
+  "image_sha256": "315737ca3f45e07f37822d571d5ed2b2f6b19e344cd0333aaf0c5871d0f4015d",
+  "slug": "arcee-trinity-large"
+}

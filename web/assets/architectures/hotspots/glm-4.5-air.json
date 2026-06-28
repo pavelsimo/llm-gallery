@@ -1,0 +1,222 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 96,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 384,
+      "x": 827,
+      "y": 396
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1932,
+      "y": 399
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 838,
+      "y": 539
+    },
+    {
+      "h": 114,
+      "id": "expert-activation-activation",
+      "label": "Activation",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 1934,
+      "y": 600
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2289,
+      "y": 600
+    },
+    {
+      "h": 114,
+      "id": "expert-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "expert",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "Expert",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 1934,
+      "y": 794
+    },
+    {
+      "h": 96,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 835,
+      "y": 1082
+    },
+    {
+      "h": 169,
+      "id": "attention-grouped-query-attention",
+      "label": "Grouped-query Attention",
+      "role": "attention",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 444,
+      "x": 770,
+      "y": 1433
+    },
+    {
+      "h": 103,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "position",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 390,
+      "y": 1468
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 833,
+      "y": 1680
+    },
+    {
+      "h": 101,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 744,
+      "y": 2095
+    },
+    {
+      "h": 99,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 834,
+      "y": 2426
+    }
+  ],
+  "image_sha256": "5115425e89dc38ca7e36f3d82134ab94dbfcdbb0fa4167aeee0f66ab361f3935",
+  "slug": "glm-4.5-air"
+}

@@ -1,6 +1,6 @@
 # The architecture taxonomy
 
-The gallery lists 78 models, but they are built from a small menu of reusable ideas. This document is
+The gallery lists 83 models, but they are built from a small menu of reusable ideas. This document is
 the "family tree": once you understand each idea here, every model file is just a particular
 combination of them. Each model file re-implements the pieces it uses inline (nothing is hidden), so
 use this page as the map and the model files as the territory.

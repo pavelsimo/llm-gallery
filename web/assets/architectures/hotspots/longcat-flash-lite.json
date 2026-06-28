@@ -1,0 +1,238 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 95,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 385,
+      "x": 802,
+      "y": 499
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-output-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_output",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 346,
+      "x": 1908,
+      "y": 501
+    },
+    {
+      "h": 96,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 813,
+      "y": 641
+    },
+    {
+      "h": 114,
+      "id": "mlp-activation-activation",
+      "label": "Activation",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "activation",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1909,
+      "y": 702
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 2265,
+      "y": 702
+    },
+    {
+      "h": 114,
+      "id": "mlp-mlp-gate-linear-layer-2",
+      "label": "Linear layer",
+      "role": "mlp",
+      "rx": 20,
+      "ry": 20,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mlp_gate",
+        "section_label": "MLP",
+        "type": "anchor"
+      },
+      "w": 347,
+      "x": 1909,
+      "y": 897
+    },
+    {
+      "h": 96,
+      "id": "moe-deepseek-mo-e",
+      "label": "DeepseekMoE",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "detected",
+      "target": {
+        "label": "DeepseekMoE",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 811,
+      "y": 1008
+    },
+    {
+      "h": 96,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 363,
+      "x": 811,
+      "y": 1184
+    },
+    {
+      "h": 169,
+      "id": "attention-multi-head-latent-attention",
+      "label": "Multi-head Latent Attention",
+      "role": "attention",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "MLA",
+        "type": "section"
+      },
+      "w": 445,
+      "x": 745,
+      "y": 1535
+    },
+    {
+      "h": 95,
+      "id": "mlp-feed-forward",
+      "label": "Feed forward",
+      "role": "mlp",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "MLP",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 1740,
+      "y": 1707
+    },
+    {
+      "h": 96,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 809,
+      "y": 1782
+    },
+    {
+      "h": 101,
+      "id": "model-embedding-token-n-gram-embedding",
+      "label": "Token + N-gram embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 548,
+      "x": 720,
+      "y": 2197
+    },
+    {
+      "h": 99,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 810,
+      "y": 2528
+    }
+  ],
+  "image_sha256": "17d046cbec4b361d3f5a73c5ee4aa5ed3e3cecbaa8196841d735100d320a987e",
+  "slug": "longcat-flash-lite"
+}

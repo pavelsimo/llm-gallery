@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Model viewer</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body data-page="viewer">
+    <header class="viewer-header">
+      <a class="back-link" href="index.html">All models</a>
+      <div class="viewer-title">
+        <p class="eyebrow" id="viewerSlug">Loading</p>
+        <h1 id="viewerName">Model viewer</h1>
+      </div>
+      <label class="model-jump">
+        <span>Model</span>
+        <select id="modelSelect"></select>
+      </label>
+    </header>
+
+    <main class="viewer-shell">
+      <aside class="diagram-pane">
+        <div class="model-facts" id="modelFacts"></div>
+        <div class="diagram-wrap" id="diagramWrap"></div>
+        <nav class="section-nav" id="sectionNav" aria-label="Code sections"></nav>
+      </aside>
+      <section class="code-pane" aria-label="Source code">
+        <div class="code-toolbar">
+          <span id="sourcePath"></span>
+          <span id="activeRange"></span>
+        </div>
+        <pre class="code-block"><code id="codeLines"></code></pre>
+      </section>
+    </main>
+  </body>
+</html>

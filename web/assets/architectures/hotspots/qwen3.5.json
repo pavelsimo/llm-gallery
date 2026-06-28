@@ -1,0 +1,471 @@
+{
+  "checked": true,
+  "coordinate_space": "artwork",
+  "hotspots": [
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2184,
+      "y": 265
+    },
+    {
+      "h": 98,
+      "id": "model-lm-head-linear-output-layer",
+      "label": "Linear output layer",
+      "role": "output",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 388,
+      "x": 765,
+      "y": 384
+    },
+    {
+      "h": 99,
+      "id": "attention-scaled-dot-product-attention-a-a-a",
+      "label": "Scaled dot-product attention A A A",
+      "role": "attention",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "GatedAttention",
+        "type": "section"
+      },
+      "w": 567,
+      "x": 1985,
+      "y": 497
+    },
+    {
+      "h": 99,
+      "id": "model-final-norm-final-norm",
+      "label": "Final norm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "final_norm",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 365,
+      "x": 776,
+      "y": 526
+    },
+    {
+      "h": 98,
+      "id": "block-norm-1-r-r-m-s-norm",
+      "label": "RRRMSNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 186,
+      "x": 1989,
+      "y": 726
+    },
+    {
+      "h": 98,
+      "id": "block-norm-1-r-r-m-s-norm-2",
+      "label": "RRRMSNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 186,
+      "x": 2172,
+      "y": 726
+    },
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear-2",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2571,
+      "y": 845
+    },
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear-3",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 171,
+      "x": 2371,
+      "y": 847
+    },
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear-4",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 1989,
+      "y": 850
+    },
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear-5",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 171,
+      "x": 2180,
+      "y": 850
+    },
+    {
+      "h": 98,
+      "id": "moe-mo-e",
+      "label": "MoE",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "detected",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 365,
+      "x": 774,
+      "y": 893
+    },
+    {
+      "h": 99,
+      "id": "block-norm-2-norm-2",
+      "label": "Norm 2",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_2",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 365,
+      "x": 774,
+      "y": 1069
+    },
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear-6",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 171,
+      "x": 2182,
+      "y": 1243
+    },
+    {
+      "h": 172,
+      "id": "mixer-gated-delta-net-or-gated-attention",
+      "label": "Gated DeltaNet or Gated Attention",
+      "role": "mixer",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "GatedDeltaNet",
+        "type": "section"
+      },
+      "w": 447,
+      "x": 708,
+      "y": 1420
+    },
+    {
+      "h": 165,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "position",
+      "rx": 29,
+      "ry": 29,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "rope",
+        "section_label": "GatedAttention",
+        "type": "anchor"
+      },
+      "w": 362,
+      "x": 282,
+      "y": 1422
+    },
+    {
+      "h": 98,
+      "id": "block-norm-1-r-r-m-s-norm-3",
+      "label": "RRRMSNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 186,
+      "x": 2171,
+      "y": 1467
+    },
+    {
+      "h": 98,
+      "id": "mixer-mixer-state-gated-delta-rule",
+      "label": "Gated Delta Rule",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 566,
+      "x": 1987,
+      "y": 1569
+    },
+    {
+      "h": 98,
+      "id": "block-norm-1-norm-1",
+      "label": "Norm 1",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 365,
+      "x": 772,
+      "y": 1667
+    },
+    {
+      "h": 98,
+      "id": "block-norm-1-l-z-norm",
+      "label": "LZNorm",
+      "role": "norm",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "norm_1",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 171,
+      "x": 2019,
+      "y": 1816
+    },
+    {
+      "h": 97,
+      "id": "mixer-conv",
+      "label": "Conv",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "GatedDeltaNet",
+        "type": "section"
+      },
+      "w": 170,
+      "x": 2011,
+      "y": 2031
+    },
+    {
+      "h": 104,
+      "id": "model-embedding-token-embedding",
+      "label": "Token embedding",
+      "role": "embedding",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "embedding",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 550,
+      "x": 683,
+      "y": 2082
+    },
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear-7",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2569,
+      "y": 2144
+    },
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear-8",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2182,
+      "y": 2145
+    },
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear-9",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2007,
+      "y": 2176
+    },
+    {
+      "h": 98,
+      "id": "mixer-output-projection-linear-10",
+      "label": "Linear",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2393,
+      "y": 2181
+    },
+    {
+      "h": 102,
+      "id": "model-tokenized-text",
+      "label": "Tokenized text",
+      "role": "input",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "ocr",
+      "target": {
+        "label": "Model",
+        "type": "section"
+      },
+      "w": 365,
+      "x": 773,
+      "y": 2413
+    }
+  ],
+  "image_sha256": "e70fa23ce8a0b63c3d1d6f18a7a90e72182acf4578f1a89111d03f69cde801f3",
+  "slug": "qwen3.5"
+}
