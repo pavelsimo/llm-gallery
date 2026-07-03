@@ -6,16 +6,152 @@
   --text: #18202a;
   --muted: #637083;
   --line: #d9e0e7;
+  --focus: #7c3aed;
   --blue: #2563eb;
   --cyan: #0f8394;
   --green: #2f7d4f;
   --amber: #b36500;
   --rose: #b63b57;
+  --diagram-bg: #ffffff;
+  --diagram-pane-bg: #fbfcfd;
+  --diagram-stroke: #111827;
+  --diagram-stroke-soft: #334155;
+  --diagram-group-fill: #d7d7d7;
+  --diagram-detail-fill: #dcdcdc;
+  --diagram-node-fill: #ffffff;
+  --diagram-node-soft: #f9fafb;
+  --diagram-node-muted: #f8fafc;
+  --diagram-attention-fill: #ecfaff;
+  --diagram-mlp-fill: #fff5e1;
+  --diagram-position-fill: #edf8ef;
+  --diagram-dark-fill: #5c5c5c;
+  --diagram-dark-text: #ffffff;
   --code-bg: #111827;
+  --code-toolbar-bg: #0d1420;
+  --code-border: #263244;
+  --code-hover: #1c2635;
+  --code-section: #172233;
+  --code-active: #26384f;
   --code-text: #e5edf5;
   --code-muted: #8290a3;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0f141b;
+    --surface: #161d27;
+    --surface-2: #202a36;
+    --text: #e8edf4;
+    --muted: #a4afbf;
+    --line: #334155;
+    --focus: #a78bfa;
+    --blue: #8ab4ff;
+    --cyan: #67d7e7;
+    --green: #91d9aa;
+    --amber: #f3b45e;
+    --rose: #ff8ba5;
+    --diagram-bg: #111827;
+    --diagram-pane-bg: #0f141b;
+    --diagram-stroke: #dbe6f3;
+    --diagram-stroke-soft: #aab8c8;
+    --diagram-group-fill: #273241;
+    --diagram-detail-fill: #202a36;
+    --diagram-node-fill: #172232;
+    --diagram-node-soft: #182334;
+    --diagram-node-muted: #1d2938;
+    --diagram-attention-fill: #103244;
+    --diagram-mlp-fill: #3b2d16;
+    --diagram-position-fill: #173424;
+    --diagram-dark-fill: #dbe6f3;
+    --diagram-dark-text: #0f141b;
+    --code-bg: #0b1020;
+    --code-toolbar-bg: #090e19;
+    --code-border: #293447;
+    --code-hover: #182235;
+    --code-section: #142033;
+    --code-active: #25405f;
+    --code-text: #edf4ff;
+    --code-muted: #a7b3c6;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef2f5;
+  --text: #18202a;
+  --muted: #637083;
+  --line: #d9e0e7;
+  --focus: #7c3aed;
+  --blue: #2563eb;
+  --cyan: #0f8394;
+  --green: #2f7d4f;
+  --amber: #b36500;
+  --rose: #b63b57;
+  --diagram-bg: #ffffff;
+  --diagram-pane-bg: #fbfcfd;
+  --diagram-stroke: #111827;
+  --diagram-stroke-soft: #334155;
+  --diagram-group-fill: #d7d7d7;
+  --diagram-detail-fill: #dcdcdc;
+  --diagram-node-fill: #ffffff;
+  --diagram-node-soft: #f9fafb;
+  --diagram-node-muted: #f8fafc;
+  --diagram-attention-fill: #ecfaff;
+  --diagram-mlp-fill: #fff5e1;
+  --diagram-position-fill: #edf8ef;
+  --diagram-dark-fill: #5c5c5c;
+  --diagram-dark-text: #ffffff;
+  --code-bg: #111827;
+  --code-toolbar-bg: #0d1420;
+  --code-border: #263244;
+  --code-hover: #1c2635;
+  --code-section: #172233;
+  --code-active: #26384f;
+  --code-text: #e5edf5;
+  --code-muted: #8290a3;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f141b;
+  --surface: #161d27;
+  --surface-2: #202a36;
+  --text: #e8edf4;
+  --muted: #a4afbf;
+  --line: #334155;
+  --focus: #a78bfa;
+  --blue: #8ab4ff;
+  --cyan: #67d7e7;
+  --green: #91d9aa;
+  --amber: #f3b45e;
+  --rose: #ff8ba5;
+  --diagram-bg: #111827;
+  --diagram-pane-bg: #0f141b;
+  --diagram-stroke: #dbe6f3;
+  --diagram-stroke-soft: #aab8c8;
+  --diagram-group-fill: #273241;
+  --diagram-detail-fill: #202a36;
+  --diagram-node-fill: #172232;
+  --diagram-node-soft: #182334;
+  --diagram-node-muted: #1d2938;
+  --diagram-attention-fill: #103244;
+  --diagram-mlp-fill: #3b2d16;
+  --diagram-position-fill: #173424;
+  --diagram-dark-fill: #dbe6f3;
+  --diagram-dark-text: #0f141b;
+  --code-bg: #0b1020;
+  --code-toolbar-bg: #090e19;
+  --code-border: #293447;
+  --code-hover: #182235;
+  --code-section: #142033;
+  --code-active: #25405f;
+  --code-text: #edf4ff;
+  --code-muted: #a7b3c6;
 }
 
 * {
@@ -31,6 +167,24 @@ body {
 
 a {
   color: inherit;
+}
+
+button {
+  font: inherit;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible,
+.diagram-node:focus-visible rect,
+.diagram-node:focus-visible circle,
+.diagram-group:focus-visible rect,
+.diagram-annotation:focus-visible,
+.diagram-hotspot:focus-visible rect {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
 }
 
 .site-header,
@@ -61,13 +215,26 @@ a {
   text-transform: uppercase;
 }
 
+.header-actions,
+.viewer-controls,
+.copy-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .header-link,
-.back-link {
+.back-link,
+.theme-toggle,
+.nav-button,
+.copy-actions button,
+.zoom-button {
   padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
+  cursor: pointer;
   font-weight: 700;
   text-decoration: none;
 }
@@ -128,6 +295,61 @@ select {
   gap: 14px;
 }
 
+.learning-rail {
+  display: grid;
+  grid-template-columns: 1.25fr repeat(8, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0 0 18px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.learning-heading,
+.learning-card {
+  min-width: 150px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.learning-heading p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.learning-card {
+  display: grid;
+  gap: 5px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.learning-card strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.learning-card span:last-child {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.learning-step {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .model-card {
   display: flex;
   min-height: 190px;
@@ -145,7 +367,7 @@ select {
 }
 
 .model-card:hover {
-  border-color: #9bb3ca;
+  border-color: color-mix(in srgb, var(--blue) 35%, var(--line));
   box-shadow: 0 10px 28px rgb(24 32 42 / 10%);
   transform: translateY(-2px);
 }
@@ -204,7 +426,7 @@ select {
 
 .arch {
   margin: 0;
-  color: #334155;
+  color: var(--diagram-stroke-soft);
   line-height: 1.35;
 }
 
@@ -231,7 +453,7 @@ select {
 
 .viewer-shell {
   display: grid;
-  grid-template-columns: minmax(820px, 58vw) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 58vw) minmax(0, 1fr);
   min-height: calc(100vh - 91px);
 }
 
@@ -243,7 +465,7 @@ select {
   overflow: auto;
   padding: 18px;
   border-right: 1px solid var(--line);
-  background: #fbfcfd;
+  background: var(--diagram-pane-bg);
 }
 
 .model-facts {
@@ -256,8 +478,23 @@ select {
 .fact-line {
   width: 100%;
   margin: 4px 0 0;
-  color: #334155;
+  color: var(--diagram-stroke-soft);
   line-height: 1.35;
+}
+
+.config-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.note-pill {
+  max-width: 100%;
+  height: auto;
+  min-height: 26px;
+  padding-block: 4px;
+  white-space: normal;
 }
 
 .fact-links a {
@@ -267,41 +504,67 @@ select {
   text-decoration: none;
 }
 
-.diagram-mode-tabs {
-  display: inline-flex;
-  gap: 2px;
-  margin-bottom: 8px;
-  padding: 3px;
+.notice {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface));
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.related-models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.related-models a {
+  padding: 6px 9px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--surface-2);
-}
-
-.diagram-mode-button {
-  min-width: 78px;
-  height: 32px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 780;
-}
-
-.diagram-mode-button.active {
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 1px 4px rgb(24 32 42 / 12%);
+  font-size: 12px;
+  font-weight: 760;
+  text-decoration: none;
 }
 
 .diagram-wrap {
-  overflow: auto;
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--diagram-bg);
+}
+
+.diagram-viewport {
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+
+.diagram-viewport.dragging {
+  cursor: grabbing;
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 5px;
+}
+
+.zoom-button {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
 }
 
 .diagram {
@@ -310,8 +573,9 @@ select {
 
   display: block;
   width: 100%;
-  min-width: 760px;
   height: auto;
+  max-height: calc(100vh - 330px);
+  min-height: 280px;
 }
 
 .diagram-node,
@@ -342,7 +606,7 @@ select {
 }
 
 .diagram-hotspot:hover rect,
-.diagram-hotspot:focus rect,
+.diagram-hotspot:focus-visible rect,
 .diagram-hotspot.active rect {
   fill: color-mix(in srgb, var(--diagram-accent) 10%, transparent);
   stroke: var(--diagram-accent);
@@ -350,14 +614,14 @@ select {
 }
 
 .diagram-group rect {
-  fill: #d7d7d7;
-  stroke: #111827;
+  fill: var(--diagram-group-fill);
+  stroke: var(--diagram-stroke);
   stroke-width: 2.2;
 }
 
 .diagram-group-block rect {
   fill: var(--diagram-accent-fill);
-  stroke: #111827;
+  stroke: var(--diagram-stroke);
   stroke-width: 2.2;
 }
 
@@ -365,8 +629,8 @@ select {
 .diagram-group-attention rect,
 .diagram-group-mixer rect,
 .diagram-group-moe rect {
-  fill: #dcdcdc;
-  stroke: #111827;
+  fill: var(--diagram-detail-fill);
+  stroke: var(--diagram-stroke);
   stroke-width: 2;
 }
 
@@ -381,7 +645,7 @@ select {
 }
 
 .group-label {
-  fill: #111827;
+  fill: var(--diagram-stroke);
   font-size: 15px;
   font-weight: 800;
   pointer-events: none;
@@ -396,7 +660,7 @@ select {
 
 .diagram-edge {
   fill: none;
-  stroke: #111827;
+  stroke: var(--diagram-stroke);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 2.4;
@@ -413,7 +677,7 @@ select {
 .edge-callout,
 .edge-side,
 .edge-detail {
-  stroke: #334155;
+  stroke: var(--diagram-stroke-soft);
 }
 
 .edge-tone-accent {
@@ -421,7 +685,7 @@ select {
 }
 
 .edge-residual {
-  stroke: #1f2937;
+  stroke: var(--diagram-stroke);
   stroke-width: 2.4;
 }
 
@@ -431,23 +695,23 @@ select {
 }
 
 marker path {
-  fill: #111827;
+  fill: var(--diagram-stroke);
 }
 
 .diagram-node rect {
-  fill: #ffffff;
-  stroke: #111827;
+  fill: var(--diagram-node-fill);
+  stroke: var(--diagram-stroke);
   stroke-width: 2;
 }
 
 .diagram-node circle {
-  fill: #ffffff;
-  stroke: #111827;
+  fill: var(--diagram-node-fill);
+  stroke: var(--diagram-stroke);
   stroke-width: 2.2;
 }
 
 .diagram-node text {
-  fill: #111827;
+  fill: var(--diagram-stroke);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0;
@@ -457,45 +721,45 @@ marker path {
 .node-attention rect,
 .node-mixer rect,
 .node-latent rect {
-  fill: #ecfaff;
-  stroke: #111827;
+  fill: var(--diagram-attention-fill);
+  stroke: var(--diagram-stroke);
 }
 
 .diagram-node-tone-dark rect {
-  fill: #5c5c5c;
-  stroke: #111827;
+  fill: var(--diagram-dark-fill);
+  stroke: var(--diagram-stroke);
 }
 
 .diagram-node-tone-dark text {
-  fill: #ffffff;
+  fill: var(--diagram-dark-text);
 }
 
 .node-mlp rect,
 .node-moe rect,
 .node-expert rect,
 .node-router rect {
-  fill: #fff5e1;
-  stroke: #111827;
+  fill: var(--diagram-mlp-fill);
+  stroke: var(--diagram-stroke);
 }
 
 .node-output rect {
-  fill: #f9fafb;
-  stroke: #111827;
+  fill: var(--diagram-node-soft);
+  stroke: var(--diagram-stroke);
 }
 
 .node-dropout rect {
-  fill: #f8fafc;
-  stroke: #111827;
+  fill: var(--diagram-node-muted);
+  stroke: var(--diagram-stroke);
 }
 
 .node-position rect,
 .node-embedding rect {
-  fill: #edf8ef;
-  stroke: #111827;
+  fill: var(--diagram-position-fill);
+  stroke: var(--diagram-stroke);
 }
 
 .node-badge rect {
-  fill: #ffffff;
+  fill: var(--diagram-node-fill);
   stroke: var(--diagram-accent);
 }
 
@@ -506,7 +770,7 @@ marker path {
 }
 
 .node-subtitle {
-  fill: #111827;
+  fill: var(--diagram-stroke);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 15px;
   font-weight: 500;
@@ -515,10 +779,10 @@ marker path {
 .diagram-node.active rect,
 .diagram-node.active circle,
 .diagram-group.active rect,
-.diagram-node:focus rect,
-.diagram-node:focus circle,
-.diagram-group:focus rect {
-  stroke: #111827;
+.diagram-node:focus-visible rect,
+.diagram-node:focus-visible circle,
+.diagram-group:focus-visible rect {
+  stroke: var(--diagram-stroke);
   stroke-width: 4;
 }
 
@@ -534,12 +798,12 @@ marker path {
 
 .annotation-leader {
   fill: none;
-  stroke: #111827;
+  stroke: var(--diagram-stroke);
   stroke-width: 2;
 }
 
 .annotation-label {
-  fill: #111827;
+  fill: var(--diagram-stroke);
   font-size: 16px;
   font-weight: 800;
   pointer-events: none;
@@ -556,7 +820,7 @@ marker path {
 }
 
 .decoration-label {
-  fill: #111827;
+  fill: var(--diagram-stroke);
   font-size: 18px;
   font-weight: 850;
 }
@@ -567,7 +831,7 @@ marker path {
 
 .diagram-decoration-repeat-brace path {
   fill: none;
-  stroke: #111827;
+  stroke: var(--diagram-stroke);
   stroke-linecap: round;
   stroke-width: 2.7;
 }
@@ -592,8 +856,16 @@ marker path {
 }
 
 .section-chip.active {
-  border-color: #111827;
-  box-shadow: inset 0 0 0 1px #111827;
+  border-color: var(--diagram-stroke);
+  box-shadow: inset 0 0 0 1px var(--diagram-stroke);
+}
+
+.section-chip[hidden] {
+  display: none;
+}
+
+.search-dim {
+  opacity: 0.2;
 }
 
 .chip-role {
@@ -616,7 +888,11 @@ marker path {
 }
 
 .code-pane {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  height: calc(100vh - 91px);
+  min-height: 360px;
   background: var(--code-bg);
 }
 
@@ -627,15 +903,46 @@ marker path {
   display: flex;
   justify-content: space-between;
   gap: 16px;
+  align-items: center;
   padding: 10px 14px;
-  border-bottom: 1px solid #263244;
-  background: #0d1420;
+  border-bottom: 1px solid var(--code-border);
+  background: var(--code-toolbar-bg);
   color: var(--code-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
 }
 
+.code-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.code-search span {
+  margin: 0;
+  color: var(--code-muted);
+}
+
+.code-search input {
+  height: 32px;
+  border-color: var(--code-border);
+  background: var(--code-bg);
+  color: var(--code-text);
+}
+
+.copy-actions button {
+  height: 32px;
+  padding: 0 9px;
+  border-color: var(--code-border);
+  background: var(--code-bg);
+  color: var(--code-text);
+  font-size: 12px;
+}
+
 .code-block {
+  flex: 1 1 auto;
+  min-height: 0;
   margin: 0;
   padding: 16px 0 64px;
   overflow: auto;
@@ -655,15 +962,15 @@ marker path {
 }
 
 .code-line:hover {
-  background: #1c2635;
+  background: var(--code-hover);
 }
 
 .code-line.section-active {
-  background: #172233;
+  background: var(--code-section);
 }
 
 .code-line.active {
-  background: #26384f;
+  background: var(--code-active);
 }
 
 .line-number {
@@ -723,6 +1030,94 @@ marker path {
   color: #7a1d1d;
 }
 
+.compare-shell {
+  width: min(1400px, calc(100% - 32px));
+  margin: 22px auto 56px;
+}
+
+.compare-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.compare-panel {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.compare-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.compare-panel h2,
+.config-diff-section h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.compare-panel-head a {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.compare-diagram .diagram {
+  max-height: 420px;
+  min-height: 240px;
+}
+
+.config-diff-section {
+  margin-top: 18px;
+}
+
+.config-diff-wrap {
+  margin-top: 10px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.config-diff {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.config-diff th,
+.config-diff td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.config-diff th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.config-diff .diff {
+  color: var(--amber);
+  font-weight: 800;
+}
+
+.config-diff .same {
+  color: var(--muted);
+}
+
 @media (max-width: 1280px) {
   .viewer-shell {
     grid-template-columns: 1fr;
@@ -734,6 +1129,10 @@ marker path {
     height: auto;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+
+  .diagram {
+    max-height: 640px;
   }
 }
 
@@ -748,16 +1147,39 @@ marker path {
     grid-template-columns: 1fr;
   }
 
+  .learning-rail {
+    grid-template-columns: minmax(220px, 1fr);
+  }
+
   .model-jump {
     width: 100%;
   }
 
+  .header-actions,
+  .viewer-controls,
+  .code-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .code-toolbar {
     top: 0;
-    flex-direction: column;
+  }
+
+  .copy-actions {
+    flex-wrap: wrap;
   }
 
   .viewer-title h1 {
     white-space: normal;
+  }
+
+  .compare-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .diagram {
+    max-height: none;
+    min-height: 220px;
   }
 }

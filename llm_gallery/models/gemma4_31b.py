@@ -31,12 +31,12 @@ TECH_REPORT_URL = "https://ai.google.dev/gemma/docs/core/model_card_4"
 @dataclass
 class Config:
     vocab_size: int = 262144
-    context_length: int = 131072
-    n_layer: int = 62
+    context_length: int = 262144
+    n_layer: int = 60
     n_head: int = 32
     n_kv_head: int = 16
     n_embd: int = 5376
-    head_dim: int = 128
+    head_dim: int = 256
     intermediate_size: int = 21504
     sliding_window: int = 1024
     global_every: int = 6

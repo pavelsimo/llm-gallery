@@ -1,7 +1,7 @@
 """GLM-5.2 (744B)
 
 GLM-5.2: GLM-5-family MLA + MoE with DeepSeek Sparse Attention and IndexShare.
-ASSUMPTION: DSA index selection and IndexShare are documented in config/diagram but full MLA is used.
+ASSUMPTION: DSA index selection and IndexShare are documented in config/diagram, but full MLA is used.
 
 Architecture : Multi-head Latent Attention (MLA) · fine-grained MoE · shared experts
 Reference    : deepseek_v3.py  ← read this first; all building blocks are annotated there

@@ -30,7 +30,7 @@ TECH_REPORT_URL = ""
 @dataclass
 class Config:
     vocab_size: int = 163840
-    context_length: int = 4096
+    context_length: int = 262144
     n_layer: int = 61
     n_embd: int = 7168
     n_head: int = 64
@@ -45,9 +45,9 @@ class Config:
     moe_intermediate_size: int = 2048
     dense_intermediate_size: int = 18432
     first_k_dense: int = 1
-    routed_scaling_factor: float = 2.5
-    rope_theta: float = 10000.0
-    norm_eps: float = 1e-6
+    routed_scaling_factor: float = 2.827
+    rope_theta: float = 50000.0
+    norm_eps: float = 1e-05
     tie_embeddings: bool = False
 
 

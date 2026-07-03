@@ -12,8 +12,9 @@ gated over time. Reading the memory with the current query gives the output:
 Because it's a recurrence, position is implicit (no RoPE, no positional embeddings). This file
 implements the recurrence **sequentially over time** for clarity — easy to read and obviously causal.
 The real xLSTM uses a chunked parallel scan for speed, and also interleaves sLSTM blocks and a small
-causal conv; those are omitted here. Gates use sigmoid (the paper's stabilized exp/log-space form is a
-numerical refinement of the same idea).
+causal conv; those are omitted here. The input/forget gates use the paper's stabilized exponential
+form: a per-head running max ``m`` keeps ``exp(i_tilde)`` and ``exp(f_tilde)`` numerically bounded
+while still allowing input writes stronger than a sigmoid gate.
 
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (xLSTM)
 Tech report: https://arxiv.org/abs/2503.13427
@@ -47,7 +48,7 @@ class Config:
     n_embd: int = 4096
     n_head: int = 8
     intermediate_size: int = 11008
-    norm_eps: float = 1e-5
+    norm_eps: float = 1e-6
     tie_embeddings: bool = False
 
 
@@ -99,15 +100,18 @@ class mLSTM(nn.Module):
         q = self.q_proj(x).view(b, t, nh, hd)
         k = self.k_proj(x).view(b, t, nh, hd) / math.sqrt(hd)  # scale keys
         v = self.v_proj(x).view(b, t, nh, hd)
-        i = torch.sigmoid(self.i_gate(x))  # [B, T, nh]
-        f = torch.sigmoid(self.f_gate(x))  # [B, T, nh]
+        i_tilde = self.i_gate(x)  # [B, T, nh], stabilized-exp input preactivation
+        f_tilde = self.f_gate(x)  # [B, T, nh], stabilized-exp forget preactivation
 
         c = x.new_zeros(b, nh, hd, hd)  # matrix memory per head
         n = x.new_zeros(b, nh, hd)  # normalizer state
+        m = x.new_full((b, nh), float("-inf"))  # running max stabilizer for exp gates
         outputs = []
         for s in range(t):
-            i_s = i[:, s].view(b, nh, 1, 1)
-            f_s = f[:, s].view(b, nh, 1, 1)
+            m_new = torch.maximum(f_tilde[:, s] + m, i_tilde[:, s])
+            i_s = torch.exp(i_tilde[:, s] - m_new).view(b, nh, 1, 1)
+            f_s = torch.exp(f_tilde[:, s] + m - m_new).view(b, nh, 1, 1)
+            m = m_new
             k_s, v_s, q_s = k[:, s], v[:, s], q[:, s]  # each [B, nh, hd]
             c = f_s * c + i_s * (v_s.unsqueeze(-1) @ k_s.unsqueeze(-2))  # write outer product
             n = f_s.view(b, nh, 1) * n + i_s.view(b, nh, 1) * k_s

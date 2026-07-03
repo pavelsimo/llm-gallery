@@ -9,11 +9,16 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import re
 import sys
 from pathlib import Path
 from typing import Any
+
+from pygments import lex
+from pygments.lexers import PythonLexer
+from pygments.token import Token
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS_DIR = ROOT / "llm_gallery" / "models"
@@ -48,6 +53,9 @@ CLASS_ROLES = {
     "DeepseekMoE": "moe",
     "Expert": "expert",
     "Block": "block",
+    "MambaLayer": "block",
+    "AttentionLayer": "block",
+    "FFNLayer": "block",
     "Model": "model",
 }
 
@@ -90,6 +98,8 @@ ROLE_LABELS = {
     "model": "Full Model",
     "helper": "Helper",
 }
+
+LEARNING_PATH_SLUGS = [entry.slug for entry in registry.tier_entries(1)]
 
 ANCHOR_ROLE_ORDER = {
     "embedding": 0,
@@ -561,6 +571,79 @@ def extract_config_defaults(tree: ast.Module) -> dict[str, Any]:
     return defaults
 
 
+def extract_marked_notes(tree: ast.Module) -> list[dict[str, str]]:
+    notes: list[dict[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    marker_re = re.compile(r"\b(ASSUMPTION|NOTE):\s*(.+?)(?=(?:\s+\b(?:ASSUMPTION|NOTE):)|$)")
+
+    def collect(doc: str | None) -> None:
+        if not doc:
+            return
+        text = " ".join(line.strip() for line in doc.splitlines() if line.strip())
+        for match in marker_re.finditer(text):
+            kind = match.group(1).lower()
+            body = match.group(2).strip()
+            if not body:
+                continue
+            key = (kind, body)
+            if key not in seen:
+                seen.add(key)
+                notes.append({"kind": kind, "text": body})
+
+    collect(ast.get_docstring(tree, clean=True))
+    for node in tree.body:
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            collect(ast.get_docstring(node, clean=True))
+    return notes
+
+
+def pygments_class(ttype: Any, text: str) -> str | None:
+    if ttype in Token.Keyword:
+        return "py-keyword"
+    if ttype in Token.Name.Decorator:
+        return "py-decorator"
+    if ttype in Token.Literal.String:
+        return "py-string"
+    if ttype in Token.Comment:
+        return "py-comment"
+    if ttype in Token.Literal.Number:
+        return "py-number"
+    if ttype in Token.Name.Function:
+        return "py-function"
+    if ttype in Token.Name.Class:
+        return "py-class"
+    if ttype in Token.Name.Builtin or text in {"self", "cls"}:
+        return "py-self" if text in {"self", "cls"} else "py-builtin"
+    if ttype in Token.Name.Namespace:
+        return "py-module"
+    if ttype in Token.Operator or ttype in Token.Punctuation:
+        return "py-operator"
+    return None
+
+
+def highlighted_source_lines(source: str) -> list[list[dict[str, str]]]:
+    highlighted: list[list[dict[str, str]]] = [[]]
+    lexer = PythonLexer(stripnl=False)
+    for ttype, text in lex(source, lexer):
+        class_name = pygments_class(ttype, text)
+        for part in text.splitlines(keepends=True):
+            token_text = part[:-1] if part.endswith("\n") else part
+            if token_text:
+                token = {"t": token_text}
+                if class_name is not None:
+                    token["c"] = class_name
+                highlighted[-1].append(token)
+            if part.endswith("\n"):
+                highlighted.append([])
+
+    source_line_count = len(source.splitlines())
+    if len(highlighted) > source_line_count and not highlighted[-1]:
+        highlighted.pop()
+    while len(highlighted) < source_line_count:
+        highlighted.append([])
+    return highlighted
+
+
 def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
     anchors: list[dict[str, Any]] = []
     used: dict[str, int] = {}
@@ -698,6 +781,19 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "mixer_state", "Mixer state update", forward,
                 any_of=("state", "memory", "for i in range", "for s in range", "s ="),
+            )
+        if role == "block":
+            add_anchor_from_matches(
+                anchors, used, section, source_lines, "norm_1", "Layer norm", init,
+                any_of=("self.norm =", "self.attn_norm =", "self.mix_norm ="),
+            )
+            add_anchor_from_matches(
+                anchors, used, section, source_lines, "residual_attn", "Mixer / attention residual", forward,
+                any_of=("self.attn", "self.mix"),
+            )
+            add_anchor_from_matches(
+                anchors, used, section, source_lines, "residual_mlp", "Feed-forward residual", forward,
+                any_of=("self.ffn",),
             )
         if role in {"mlp", "expert"}:
             add_anchor_from_matches(
@@ -1319,6 +1415,7 @@ def add_sparse_attention_note(
         "minimax-m3": "MiniMax sparse attn (full fallback)",
         "glm-5.2": "DSA / IndexShare (full fallback)",
         "glm-5": "Sparse attn omitted",
+        "glm-5.1": "Sparse attn omitted",
         "deepseek-v3.2": "Sparse attn omitted",
         "deepseek-v4-flash": "Compressed sparse attn omitted",
         "deepseek-v4-pro": "Compressed sparse attn omitted",
@@ -1329,6 +1426,47 @@ def add_sparse_attention_note(
     label = labels.get(slug, "Sparse attention metadata")
     nodes.append(node("sparse-attn-note", label, target, "attention", 590, 220, 275, 36, rx=8))
     edges.append(edge("sparse-attn-callout", "M430 492 C520 470 540 238 590 238", role="callout", dashed=True, target=target))
+
+
+def layout_column(
+    items: list[dict[str, Any]],
+    *,
+    x: int,
+    y_bottom: int,
+    width: int,
+    gap: int = 18,
+    default_height: int = 42,
+) -> dict[str, dict[str, Any]]:
+    y = y_bottom
+    laid_out: dict[str, dict[str, Any]] = {}
+    for item in items:
+        height = int(item.get("h", default_height))
+        y -= height
+        laid_out[item["id"]] = {**item, "x": x, "y": y, "w": int(item.get("w", width)), "h": height}
+        y -= gap
+    return laid_out
+
+
+def center_x(box: dict[str, Any]) -> int:
+    return int(box["x"] + box["w"] / 2)
+
+
+def center_y(box: dict[str, Any]) -> int:
+    return int(box["y"] + box["h"] / 2)
+
+
+def top_y(box: dict[str, Any]) -> int:
+    return int(box["y"])
+
+
+def bottom_y(box: dict[str, Any]) -> int:
+    return int(box["y"] + box["h"])
+
+
+def flow_edge(edge_id: str, lower: dict[str, Any], upper: dict[str, Any], target: dict[str, Any] | None) -> dict[str, Any]:
+    x1 = center_x(lower)
+    x2 = center_x(upper)
+    return edge(edge_id, f"M{x1} {top_y(lower)} L{x2} {bottom_y(upper)}", target=target)
 
 
 def make_gpt2_diagram(
@@ -1579,6 +1717,27 @@ def make_decoder_diagram(
     if template == "parallel":
         ffn_label = "Parallel MoE" if moe is not None else "Parallel FFN"
 
+    stack = layout_column(
+        [
+            {"id": "input", "h": 38, "w": 180},
+            {"id": "embedding"},
+            {"id": "block-norm-1", "h": 38, "w": 160},
+            {"id": "compute", "h": 52, "w": 205},
+            {"id": "plus-1", "h": 32, "w": 32},
+            {"id": "block-norm-2", "h": 38, "w": 160},
+            {"id": "feed-forward", "h": 48, "w": 205},
+            {"id": "plus-2", "h": 32, "w": 32},
+            {"id": "final-norm", "h": 38, "w": 175},
+            {"id": "lm-head", "h": 38, "w": 214},
+        ],
+        x=335,
+        y_bottom=756,
+        width=250,
+        gap=18,
+    )
+    for item in stack.values():
+        item["x"] = int(335 - item["w"] / 2)
+
     groups = [
         group("model-shell", "Model shell", model, "model", 140, 86, 390, 610, rx=32),
         group(
@@ -1587,9 +1746,9 @@ def make_decoder_diagram(
             block_stack,
             "block",
             210,
-            275,
+            top_y(stack["block-norm-1"]) - 28,
             250,
-            310,
+            bottom_y(stack["plus-2"]) - top_y(stack["block-norm-1"]) + 56,
             rx=28,
             show_label=False,
         ),
@@ -1600,60 +1759,72 @@ def make_decoder_diagram(
             "Tokenized text",
             model,
             "input",
-            245,
-            718,
-            180,
-            38,
+            stack["input"]["x"],
+            stack["input"]["y"],
+            stack["input"]["w"],
+            stack["input"]["h"],
             subtitle="Every effort moves you",
         ),
-        node("embedding", "Token embedding", embedding, "embedding", 210, 634, 250, 42),
-        node("block-norm-1", "Norm 1", attn_norm, "norm", 250, 532, 160, 38),
+        node("embedding", "Token embedding", embedding, "embedding", stack["embedding"]["x"], stack["embedding"]["y"], stack["embedding"]["w"], stack["embedding"]["h"]),
+        node("block-norm-1", "Norm 1", attn_norm, "norm", stack["block-norm-1"]["x"], stack["block-norm-1"]["y"], stack["block-norm-1"]["w"], stack["block-norm-1"]["h"]),
         node(
             "compute",
             compute_label,
             compute,
             compute_role,
-            230,
-            466,
-            205,
-            52,
+            stack["compute"]["x"],
+            stack["compute"]["y"],
+            stack["compute"]["w"],
+            stack["compute"]["h"],
             tone="dark" if compute_role == "attention" else None,
         ),
-        node("plus-1", "+", attn_residual, "plus", 315, 425, 32, 32, shape="circle"),
-        node("block-norm-2", "Norm 2", ffn_norm, "norm", 250, 376, 160, 38),
-        node("feed-forward", ffn_label, ffn_target, ffn_role, 230, 320, 205, 48),
-        node("plus-2", "+", ffn_residual, "plus", 315, 285, 32, 32, shape="circle"),
-        node("final-norm", "Final norm", final_norm, "norm", 245, 214, 175, 38),
-        node("lm-head", "Linear output layer", lm_head, "output", 226, 154, 214, 38),
+        node("plus-1", "+", attn_residual, "plus", stack["plus-1"]["x"], stack["plus-1"]["y"], stack["plus-1"]["w"], stack["plus-1"]["h"], shape="circle"),
+        node("block-norm-2", "Norm 2", ffn_norm, "norm", stack["block-norm-2"]["x"], stack["block-norm-2"]["y"], stack["block-norm-2"]["w"], stack["block-norm-2"]["h"]),
+        node("feed-forward", ffn_label, ffn_target, ffn_role, stack["feed-forward"]["x"], stack["feed-forward"]["y"], stack["feed-forward"]["w"], stack["feed-forward"]["h"]),
+        node("plus-2", "+", ffn_residual, "plus", stack["plus-2"]["x"], stack["plus-2"]["y"], stack["plus-2"]["w"], stack["plus-2"]["h"], shape="circle"),
+        node("final-norm", "Final norm", final_norm, "norm", stack["final-norm"]["x"], stack["final-norm"]["y"], stack["final-norm"]["w"], stack["final-norm"]["h"]),
+        node("lm-head", "Linear output layer", lm_head, "output", stack["lm-head"]["x"], stack["lm-head"]["y"], stack["lm-head"]["w"], stack["lm-head"]["h"]),
     ]
     if template == "parallel":
-        nodes[2] = node("block-norm-1", "Shared norm", anchor_by_role(anchors, "parallel", block) or block, "norm", 250, 532, 160, 38)
-        nodes[4] = node("plus-1", "+", anchor_by_role(anchors, "parallel", block) or block, "plus", 315, 425, 32, 32, shape="circle")
-        nodes[5] = node("parallel-branch", "Parallel sum", anchor_by_role(anchors, "parallel", block) or block, "block", 250, 376, 160, 38)
+        nodes[2] = node("block-norm-1", "Shared norm", anchor_by_role(anchors, "parallel", block) or block, "norm", stack["block-norm-1"]["x"], stack["block-norm-1"]["y"], stack["block-norm-1"]["w"], stack["block-norm-1"]["h"])
+        nodes[4] = node("plus-1", "+", anchor_by_role(anchors, "parallel", block) or block, "plus", stack["plus-1"]["x"], stack["plus-1"]["y"], stack["plus-1"]["w"], stack["plus-1"]["h"], shape="circle")
+        nodes[5] = node("parallel-branch", "Parallel sum", anchor_by_role(anchors, "parallel", block) or block, "block", stack["block-norm-2"]["x"], stack["block-norm-2"]["y"], stack["block-norm-2"]["w"], stack["block-norm-2"]["h"])
 
     if position is not None:
-        nodes.append(node("position", label_for(position, "Position signal"), rope or position, "position", 68, 478, 135, 38))
+        nodes.append(node("position", label_for(position, "Position signal"), rope or position, "position", 68, stack["compute"]["y"] + 12, 135, 38))
     if qk_norm is not None:
-        nodes.append(node("qk-norm", "Q/K norm", qk_norm, "norm", 55, 420, 145, 38))
+        nodes.append(node("qk-norm", "Q/K norm", qk_norm, "norm", 55, stack["plus-1"]["y"] - 5, 145, 38))
 
     edges = [
-        edge("flow-input-embedding", "M335 718 L335 676", target=embedding),
-        edge("flow-embedding-norm", "M335 634 L335 570", target=block_stack),
-        edge("flow-norm-compute", "M335 532 L335 518", target=compute),
-        edge("flow-compute-plus", "M335 466 L335 457", target=attn_residual),
-        edge("flow-plus-norm", "M335 425 L335 414", target=ffn_residual),
-        edge("flow-norm-ffn", "M335 376 L335 368", target=ffn_target),
-        edge("flow-ffn-plus", "M335 320 L335 317", target=ffn_residual),
-        edge("flow-plus-final", "M335 285 L335 252", target=output_head),
-        edge("flow-final-head", "M335 214 L335 192", target=output_head),
-        edge("flow-head-out", "M335 154 L335 116", target=output_head),
-        edge("residual-attn", "M255 553 C205 553 205 441 315 441", role="residual", arrow=False, target=attn_residual),
-        edge("residual-ffn", "M255 396 C205 396 205 301 315 301", role="residual", arrow=False, target=ffn_residual),
+        flow_edge("flow-input-embedding", stack["input"], stack["embedding"], embedding),
+        flow_edge("flow-embedding-norm", stack["embedding"], stack["block-norm-1"], block_stack),
+        flow_edge("flow-norm-compute", stack["block-norm-1"], stack["compute"], compute),
+        flow_edge("flow-compute-plus", stack["compute"], stack["plus-1"], attn_residual),
+        flow_edge("flow-plus-norm", stack["plus-1"], stack["block-norm-2"], ffn_residual),
+        flow_edge("flow-norm-ffn", stack["block-norm-2"], stack["feed-forward"], ffn_target),
+        flow_edge("flow-ffn-plus", stack["feed-forward"], stack["plus-2"], ffn_residual),
+        flow_edge("flow-plus-final", stack["plus-2"], stack["final-norm"], output_head),
+        flow_edge("flow-final-head", stack["final-norm"], stack["lm-head"], output_head),
+        edge("flow-head-out", f"M335 {top_y(stack['lm-head'])} L335 116", target=output_head),
+        edge(
+            "residual-attn",
+            f"M255 {center_y(stack['block-norm-1'])} C205 {center_y(stack['block-norm-1'])} 205 {center_y(stack['plus-1'])} {stack['plus-1']['x']} {center_y(stack['plus-1'])}",
+            role="residual",
+            arrow=False,
+            target=attn_residual,
+        ),
+        edge(
+            "residual-ffn",
+            f"M255 {center_y(stack['block-norm-2'])} C205 {center_y(stack['block-norm-2'])} 205 {center_y(stack['plus-2'])} {stack['plus-2']['x']} {center_y(stack['plus-2'])}",
+            role="residual",
+            arrow=False,
+            target=ffn_residual,
+        ),
     ]
     if position is not None:
-        edges.append(edge("position-to-compute", "M203 497 L230 492", role="side", target=rope or position))
+        edges.append(edge("position-to-compute", f"M203 {stack['compute']['y'] + 31} L230 {stack['compute']['y'] + 26}", role="side", target=rope or position))
     if qk_norm is not None:
-        edges.append(edge("qk-to-compute", "M200 439 L230 474", role="side", target=qk_norm))
+        edges.append(edge("qk-to-compute", f"M200 {stack['plus-1']['y'] + 14} L230 {stack['compute']['y'] + 34}", role="side", target=qk_norm))
 
     annotations = metric_annotations(config, model, block_stack, compute, embedding, ffn_target)
     decorations = []
@@ -1663,13 +1834,18 @@ def make_decoder_diagram(
                 decoration(
                     "repeat-brace",
                     "repeat-brace",
-                    path="M205 516 C188 516 188 538 199 543 C188 548 188 570 205 570",
+                    path=(
+                        f"M205 {top_y(stack['block-norm-1']) - 16} "
+                        f"C188 {top_y(stack['block-norm-1']) - 16} 188 {top_y(stack['block-norm-1']) + 6} "
+                        f"199 {top_y(stack['block-norm-1']) + 11} C188 {top_y(stack['block-norm-1']) + 16} "
+                        f"188 {top_y(stack['block-norm-1']) + 38} 205 {top_y(stack['block-norm-1']) + 38}"
+                    ),
                 ),
                 decoration(
                     "repeat-count",
                     "repeat-count",
                     x=150,
-                    y=556,
+                    y=top_y(stack["block-norm-1"]) + 24,
                     lines=[rich_line((f"{fmt_int(config['n_layer'])} \u00d7", "accent"))],
                 ),
             ]
@@ -1751,18 +1927,26 @@ def resolve_hotspot_target(
     sections: list[dict[str, Any]],
     anchors: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    def section_by_label(label: str | None) -> dict[str, Any] | None:
+        match = next((section for section in sections if section["label"] == label), None)
+        if match is not None:
+            return match
+        if label == "Block":
+            return next((section for section in sections if section["role"] == "block"), None)
+        return None
+
     target = hotspot.get("target", {})
     target_type = target.get("type")
     if target_type == "section":
         label = target.get("label")
-        match = next((section for section in sections if section["label"] == label), None)
+        match = section_by_label(label)
         if match is None:
             raise ValueError(f"{slug}:{hotspot.get('id')} references unknown section label {label!r}")
         return match
     if target_type == "anchor":
         section_label = target.get("section_label")
         role = target.get("role")
-        section = next((item for item in sections if item["label"] == section_label), None)
+        section = section_by_label(section_label)
         if section is None:
             raise ValueError(
                 f"{slug}:{hotspot.get('id')} references unknown anchor section {section_label!r}"
@@ -1878,6 +2062,7 @@ def build_model_payload(entry: registry.Entry, architecture_manifest: dict[str, 
     diagram = add_artwork_metadata(entry.slug, diagram, architecture_manifest or {})
     diagram = add_hotspot_metadata(entry.slug, diagram, sections, anchors)
     docstring = ast.get_docstring(tree, clean=True) or ""
+    gallery_card_id = GALLERY_SOURCE_KEYS.get(entry.slug, entry.slug)
 
     return {
         "slug": entry.slug,
@@ -1890,9 +2075,12 @@ def build_model_payload(entry: registry.Entry, architecture_manifest: dict[str, 
         "template": template,
         "source_path": str(path.relative_to(ROOT)),
         "source_lines": source_lines,
+        "source_tokens": highlighted_source_lines(source),
         "line_count": len(source_lines),
         "summary": docstring.splitlines()[0] if docstring else entry.archetype,
         "config": config,
+        "gallery_card_id": gallery_card_id,
+        "notes": extract_marked_notes(tree),
         "links": {
             "gallery": constants.get("GALLERY_URL", ""),
             "tech_report": constants.get("TECH_REPORT_URL", ""),
@@ -1902,6 +2090,15 @@ def build_model_payload(entry: registry.Entry, architecture_manifest: dict[str, 
         "section_role_counts": role_counts(sections),
         "diagram": diagram,
     }
+
+
+def parameter_scale(name: str) -> str:
+    match = re.search(r"\(([^)]*(?:B|M|T|A\d+)[^)]*)\)", name)
+    return match.group(1) if match else ""
+
+
+def release_year(release: str) -> str:
+    return release[:4] if re.match(r"\d{4}", release or "") else ""
 
 
 def index_entry(payload: dict[str, Any]) -> dict[str, Any]:
@@ -1915,21 +2112,43 @@ def index_entry(payload: dict[str, Any]) -> dict[str, Any]:
         "tier": payload["tier"],
         "template": payload["template"],
         "summary": payload["summary"],
+        "gallery_card_id": payload["gallery_card_id"],
+        "parameter_scale": parameter_scale(payload["name"]),
+        "release_year": release_year(payload["release"]),
         "line_count": payload["line_count"],
         "section_role_counts": payload["section_role_counts"],
     }
 
 
+def data_version_for(models: list[dict[str, Any]]) -> str:
+    digest = hashlib.sha256()
+    for payload in models:
+        digest.update(json_text(payload).encode("utf-8"))
+    return digest.hexdigest()[:12]
+
+
 def build_payloads() -> dict[str, Any]:
     architecture_manifest = load_architecture_manifest()
     models = [build_model_payload(entry, architecture_manifest) for entry in registry.REGISTRY]
+    data_version = data_version_for(models)
+    for payload in models:
+        payload["data_version"] = data_version
+    index_models = [index_entry(payload) for payload in models]
+    learning_path = [
+        {**model, "path_order": order + 1}
+        for order, slug in enumerate(LEARNING_PATH_SLUGS)
+        for model in index_models
+        if model["slug"] == slug
+    ]
     return {
         "index.json": {
             "generated_by": "scripts/build_visualizer_data.py",
+            "data_version": data_version,
             "model_count": len(models),
             "templates": sorted({payload["template"] for payload in models}),
             "role_labels": ROLE_LABELS,
-            "models": [index_entry(payload) for payload in models],
+            "learning_path": learning_path,
+            "models": index_models,
         },
         **{f"{payload['slug']}.json": payload for payload in models},
     }

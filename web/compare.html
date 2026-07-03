@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compare models</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body data-page="compare">
+    <header class="viewer-header">
+      <div class="header-actions">
+        <a class="back-link" href="index.html">All models</a>
+      </div>
+      <div class="viewer-title">
+        <p class="eyebrow">llm-gallery</p>
+        <h1>Compare models</h1>
+      </div>
+      <div class="viewer-controls">
+        <label class="model-jump">
+          <span>Left</span>
+          <select id="leftModelSelect"></select>
+        </label>
+        <label class="model-jump">
+          <span>Right</span>
+          <select id="rightModelSelect"></select>
+        </label>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode" title="Toggle dark mode">
+          Theme
+        </button>
+      </div>
+    </header>
+
+    <main class="compare-shell">
+      <section class="compare-panels" aria-label="Selected models">
+        <article class="compare-panel">
+          <div class="compare-panel-head">
+            <h2 id="leftModelName">Left model</h2>
+            <a id="leftViewerLink" href="viewer.html">Open</a>
+          </div>
+          <div class="model-facts" id="leftModelFacts"></div>
+          <div class="diagram-wrap compare-diagram" id="leftDiagramWrap"></div>
+        </article>
+        <article class="compare-panel">
+          <div class="compare-panel-head">
+            <h2 id="rightModelName">Right model</h2>
+            <a id="rightViewerLink" href="viewer.html">Open</a>
+          </div>
+          <div class="model-facts" id="rightModelFacts"></div>
+          <div class="diagram-wrap compare-diagram" id="rightDiagramWrap"></div>
+        </article>
+      </section>
+
+      <section class="config-diff-section" aria-label="Configuration differences">
+        <h2>Config diff</h2>
+        <div class="config-diff-wrap" tabindex="0">
+          <table class="config-diff" id="configDiffTable"></table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

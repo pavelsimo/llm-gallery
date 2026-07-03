@@ -31,7 +31,6 @@ if str(ROOT) not in sys.path:
 
 from llm_gallery.models import registry  # noqa: E402
 
-
 CC_RE = re.compile(
     r"\s*\d+:\s+"
     r"(?P<w>\d+)x(?P<h>\d+)\+(?P<x>\d+)\+(?P<y>\d+)\s+"

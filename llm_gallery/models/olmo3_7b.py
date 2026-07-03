@@ -1,7 +1,7 @@
 """OLMo 3 (7B)
 
-OLMo 3 7B: OLMo 2's recipe (full-dim QK-Norm + post-norm), full MHA.
-ASSUMPTION: the sliding/global attention schedule is omitted; full attention used.
+OLMo 3 7B: OLMo 2's recipe (full-dim QK-Norm + post-norm), full MHA,
+with the published 3 sliding-window / 1 full-attention schedule.
 
 Architecture : GQA · QK-Norm · post-norm placement · RoPE
 Reference    : olmo2_7b.py  ← read this first; all building blocks are annotated there
@@ -30,21 +30,24 @@ TECH_REPORT_URL = "https://arxiv.org/pdf/2512.13961"
 
 @dataclass
 class Config:
-    vocab_size: int = 100352
-    context_length: int = 4096
+    vocab_size: int = 100278
+    context_length: int = 65536
     n_layer: int = 32
     n_head: int = 32
     n_kv_head: int = 32
     n_embd: int = 4096
     intermediate_size: int = 11008
     rope_theta: float = 500000.0
+    sliding_window: int = 4096
+    global_every: int = 4
     norm_eps: float = 1e-6
 
 
 PRESETS: dict[str, Config] = {
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=4, n_head=4, n_kv_head=4,
-        n_embd=128, intermediate_size=256, rope_theta=10000.0,
+        n_embd=128, intermediate_size=256, rope_theta=10000.0, sliding_window=16,
+        global_every=4,
     ),
     "olmo3-7b": Config(),
 }
@@ -147,8 +150,9 @@ class SwiGLU(nn.Module):
 class Block(nn.Module):
     """Post-norm block: the norm is applied to the sublayer *output*, not its input."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, layer_idx: int):
         super().__init__()
+        self.is_global = cfg.sliding_window <= 0 or (layer_idx + 1) % cfg.global_every == 0
         self.attn = Attention(cfg)
         self.attn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.ffn = SwiGLU(cfg)
@@ -170,7 +174,7 @@ class Model(nn.Module):
         super().__init__()
         self.config = cfg
         self.tok_emb = nn.Embedding(cfg.vocab_size, cfg.n_embd)
-        self.blocks = nn.ModuleList(Block(cfg) for _ in range(cfg.n_layer))
+        self.blocks = nn.ModuleList(Block(cfg, i) for i in range(cfg.n_layer))
         self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.lm_head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
 
@@ -178,10 +182,15 @@ class Model(nn.Module):
         cos, sin = precompute_rope(head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
+        n = cfg.context_length
+        ar = torch.arange(n)
+        future = ar[None, :] > ar[:, None]
+        if cfg.sliding_window > 0:
+            too_far = (ar[:, None] - ar[None, :]) >= cfg.sliding_window
+            self.register_buffer("mask_local", future | too_far, persistent=False)
+        else:
+            self.register_buffer("mask_local", future, persistent=False)
+        self.register_buffer("mask_global", future, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -193,7 +202,8 @@ class Model(nn.Module):
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            mask = self.mask_global if block.is_global else self.mask_local
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 

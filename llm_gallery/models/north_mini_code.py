@@ -37,7 +37,7 @@ TECH_REPORT_URL = "https://huggingface.co/blog/CohereLabs/introducing-north-mini
 @dataclass
 class Config:
     vocab_size: int = 262144
-    context_length: int = 262144
+    context_length: int = 500000
     output_context_length: int = 65536
     n_layer: int = 49
     n_head: int = 32

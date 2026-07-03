@@ -12,9 +12,8 @@
       "shape": "roundrect",
       "source": "ocr",
       "target": {
-        "role": "norm_1",
-        "section_label": "Block",
-        "type": "anchor"
+        "label": "MambaLayer",
+        "type": "section"
       },
       "w": 221,
       "x": 2170,

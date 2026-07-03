@@ -15,6 +15,10 @@ This removes one sequential dependency per layer (attn and ffn can be computed a
 uses one norm per block instead of two. Otherwise it's the standard modern recipe: RoPE, GQA, SwiGLU,
 RMSNorm, tied embeddings.
 
+Source notes: LLM Architecture Gallery identifies the model as 3.35B parameters, and Vultr's Tiny
+Aya deployment summary lists the public architectural dimensions used here: 36 layers, 2048 hidden
+size, 16 query heads, 4 KV heads, and 11008 FFN intermediate size.
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Tiny Aya)
 Tech report: https://arxiv.org/pdf/2603.11510
 
@@ -43,12 +47,12 @@ TECH_REPORT_URL = "https://arxiv.org/pdf/2603.11510"
 class Config:
     vocab_size: int = 256000
     context_length: int = 8192
-    n_layer: int = 24
+    n_layer: int = 36
     n_head: int = 16
-    n_kv_head: int = 8
+    n_kv_head: int = 4
     n_embd: int = 2048
     head_dim: int = 128
-    intermediate_size: int = 8192
+    intermediate_size: int = 11008
     rope_theta: float = 500000.0
     norm_eps: float = 1e-5
     tie_embeddings: bool = True

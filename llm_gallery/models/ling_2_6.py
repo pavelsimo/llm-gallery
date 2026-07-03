@@ -1,6 +1,7 @@
 """Ling 2.6 (1T)
 
 Ling 2.6: iteration on Ling 2.5 (linear-attention hybrid + MoE). Config approximate.
+ASSUMPTION: full-attention layers use GQA here, not MLA. See kimi_linear.py.
 
 Architecture : Lightning linear attention · GQA hybrid · sparse MoE
 Reference    : kimi_linear.py  ← read this first; all building blocks are annotated there
@@ -29,29 +30,29 @@ TECH_REPORT_URL = ""
 
 @dataclass
 class Config:
-    vocab_size: int = 126464
-    context_length: int = 40960
-    n_layer: int = 61
-    n_embd: int = 4096
+    vocab_size: int = 157184
+    context_length: int = 262144
+    n_layer: int = 80
+    n_embd: int = 8192
     linear_n_head: int = 32
-    n_head: int = 32
-    n_kv_head: int = 4
+    n_head: int = 64
+    n_kv_head: int = 64
     head_dim: int = 128
-    rope_theta: float = 1000000.0
+    rope_theta: float = 6000000
     attn_every: int = 4
     n_experts: int = 256
     n_experts_per_tok: int = 8
-    moe_intermediate_size: int = 1024
+    moe_intermediate_size: int = 2048
     n_shared_experts: int = 1
-    norm_eps: float = 1e-5
+    norm_eps: float = 1e-06
     tie_embeddings: bool = False
 
 
 PRESETS: dict[str, Config] = {
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=6, n_embd=128, linear_n_head=4, n_head=4,
-        n_kv_head=2, head_dim=32, rope_theta=10000.0, attn_every=3, n_experts=8, n_experts_per_tok=2,
-        moe_intermediate_size=128, n_shared_experts=1,
+        n_kv_head=2, head_dim=32, rope_theta=10000.0, attn_every=3, n_experts=8,
+        n_experts_per_tok=2, moe_intermediate_size=128, n_shared_experts=1,
     ),
     "ling-2.6": Config(),
 }

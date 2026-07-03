@@ -29,24 +29,24 @@ TECH_REPORT_URL = "https://www.sarvam.ai/blogs/sarvam-30b-105b"
 
 @dataclass
 class Config:
-    vocab_size: int = 151936
-    context_length: int = 4096
-    n_layer: int = 61
-    n_embd: int = 6144
+    vocab_size: int = 262144
+    context_length: int = 131072
+    n_layer: int = 32
+    n_embd: int = 4096
     n_head: int = 64
     q_lora_rank: int = 1536
     kv_lora_rank: int = 512
     qk_nope_head_dim: int = 128
     qk_rope_head_dim: int = 64
     v_head_dim: int = 128
-    n_experts: int = 256
+    n_experts: int = 128
     n_experts_per_tok: int = 8
     n_shared_experts: int = 1
     moe_intermediate_size: int = 2048
-    dense_intermediate_size: int = 14336
-    first_k_dense: int = 3
+    dense_intermediate_size: int = 16384
+    first_k_dense: int = 1
     routed_scaling_factor: float = 2.5
-    rope_theta: float = 1000000.0
+    rope_theta: float = 10000.0
     norm_eps: float = 1e-6
     tie_embeddings: bool = False
 

@@ -30,19 +30,21 @@ TECH_REPORT_URL = ""
 
 @dataclass
 class Config:
-    vocab_size: int = 151936
-    context_length: int = 40960
-    n_layer: int = 62
+    vocab_size: int = 248320
+    context_length: int = 262144
+    n_layer: int = 60
     n_embd: int = 4096
     linear_n_head: int = 32
     n_head: int = 32
-    n_kv_head: int = 4
-    head_dim: int = 128
+    n_kv_head: int = 2
+    head_dim: int = 256
     rope_theta: float = 1000000.0
+    partial_rotary_factor: float = 0.25
     attn_every: int = 4
+    linear_conv_kernel_dim: int = 4
     n_experts: int = 512
     n_experts_per_tok: int = 10
-    moe_intermediate_size: int = 512
+    moe_intermediate_size: int = 1024
     n_shared_experts: int = 1
     norm_eps: float = 1e-6
     tie_embeddings: bool = False
@@ -51,8 +53,9 @@ class Config:
 PRESETS: dict[str, Config] = {
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=6, n_embd=128, linear_n_head=4, n_head=4,
-        n_kv_head=2, head_dim=32, rope_theta=10000.0, attn_every=3, n_experts=8, n_experts_per_tok=2,
-        moe_intermediate_size=128, n_shared_experts=1,
+        n_kv_head=2, head_dim=32, rope_theta=10000.0, partial_rotary_factor=0.25,
+        attn_every=3, linear_conv_kernel_dim=4, n_experts=8,
+        n_experts_per_tok=2, moe_intermediate_size=128, n_shared_experts=1,
     ),
     "qwen3.5": Config(),
 }
@@ -87,6 +90,18 @@ class GatedDeltaNet(nn.Module):
         self.q_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
         self.k_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
         self.v_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
+        self.q_conv = nn.Conv1d(
+            cfg.n_embd, cfg.n_embd, kernel_size=cfg.linear_conv_kernel_dim,
+            groups=cfg.n_embd, padding=cfg.linear_conv_kernel_dim - 1,
+        )
+        self.k_conv = nn.Conv1d(
+            cfg.n_embd, cfg.n_embd, kernel_size=cfg.linear_conv_kernel_dim,
+            groups=cfg.n_embd, padding=cfg.linear_conv_kernel_dim - 1,
+        )
+        self.v_conv = nn.Conv1d(
+            cfg.n_embd, cfg.n_embd, kernel_size=cfg.linear_conv_kernel_dim,
+            groups=cfg.n_embd, padding=cfg.linear_conv_kernel_dim - 1,
+        )
         self.alpha_proj = nn.Linear(cfg.n_embd, cfg.linear_n_head)  # decay gate per head
         self.beta_proj = nn.Linear(cfg.n_embd, cfg.linear_n_head)  # write strength per head
         self.g_proj = nn.Linear(cfg.n_embd, cfg.n_embd)  # output gate
@@ -96,9 +111,12 @@ class GatedDeltaNet(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, t, d = x.shape
         nh, hd = self.n_head, self.head_dim
-        q = self.q_proj(x).view(b, t, nh, hd)
-        k = F.normalize(self.k_proj(x).view(b, t, nh, hd), dim=-1)  # unit keys (delta-rule stability)
-        v = self.v_proj(x).view(b, t, nh, hd)
+        q = self.q_conv(self.q_proj(x).transpose(1, 2))[..., :t].transpose(1, 2)
+        k = self.k_conv(self.k_proj(x).transpose(1, 2))[..., :t].transpose(1, 2)
+        v = self.v_conv(self.v_proj(x).transpose(1, 2))[..., :t].transpose(1, 2)
+        q = F.normalize(q.reshape(b, t, nh, hd), dim=-1)
+        k = F.normalize(k.reshape(b, t, nh, hd), dim=-1)
+        v = v.reshape(b, t, nh, hd)
         alpha = torch.sigmoid(self.alpha_proj(x))  # [B, T, nh] in (0,1)
         beta = torch.sigmoid(self.beta_proj(x))
 
@@ -117,8 +135,8 @@ class GatedDeltaNet(nn.Module):
         return self.out_proj(o)
 
 
-def precompute_rope(head_dim, max_seq_len, theta):
-    inv_freq = 1.0 / (theta ** (torch.arange(0, head_dim, 2).float() / head_dim))
+def precompute_rope(rotary_dim, max_seq_len, theta):
+    inv_freq = 1.0 / (theta ** (torch.arange(0, rotary_dim, 2).float() / rotary_dim))
     freqs = torch.outer(torch.arange(max_seq_len).float(), inv_freq)
     emb = torch.cat([freqs, freqs], dim=-1)
     return emb.cos(), emb.sin()
@@ -131,7 +149,12 @@ def rotate_half(x):
 
 def apply_rope(q, k, cos, sin):
     cos, sin = cos[None, None], sin[None, None]
-    return q * cos + rotate_half(q) * sin, k * cos + rotate_half(k) * sin
+    rotary_dim = cos.shape[-1]
+    q_rot, q_pass = q[..., :rotary_dim], q[..., rotary_dim:]
+    k_rot, k_pass = k[..., :rotary_dim], k[..., rotary_dim:]
+    q_rot = q_rot * cos + rotate_half(q_rot) * sin
+    k_rot = k_rot * cos + rotate_half(k_rot) * sin
+    return torch.cat([q_rot, q_pass], dim=-1), torch.cat([k_rot, k_pass], dim=-1)
 
 
 def repeat_kv(x, n_rep):
@@ -149,6 +172,9 @@ class GatedAttention(nn.Module):
         self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
         self.n_rep = cfg.n_head // cfg.n_kv_head
         self.head_dim = cfg.head_dim
+        self.rotary_dim = int(cfg.head_dim * cfg.partial_rotary_factor)
+        if self.rotary_dim % 2 != 0:
+            raise ValueError("partial RoPE rotary_dim must be even")
         self.q_proj = nn.Linear(cfg.n_embd, self.n_head * self.head_dim, bias=False)
         self.k_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.v_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
@@ -250,7 +276,10 @@ class Model(nn.Module):
         self.lm_head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
         if cfg.tie_embeddings:
             self.lm_head.weight = self.tok_emb.weight
-        cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
+        rotary_dim = int(cfg.head_dim * cfg.partial_rotary_factor)
+        if rotary_dim % 2 != 0:
+            raise ValueError("cfg.head_dim * cfg.partial_rotary_factor must be even")
+        cos, sin = precompute_rope(rotary_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
         causal = torch.triu(

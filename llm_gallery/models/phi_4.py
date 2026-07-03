@@ -40,7 +40,7 @@ class Config:
     intermediate_size: int = 17920
     rope_theta: float = 250000.0
     norm_eps: float = 1e-5
-    tie_embeddings: bool = True
+    tie_embeddings: bool = False
 
 
 PRESETS: dict[str, Config] = {

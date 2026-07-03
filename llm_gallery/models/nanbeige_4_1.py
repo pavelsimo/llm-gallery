@@ -29,17 +29,17 @@ TECH_REPORT_URL = "https://arxiv.org/pdf/2602.13367"
 
 @dataclass
 class Config:
-    vocab_size: int = 128256
-    context_length: int = 32768
-    n_layer: int = 28
-    n_head: int = 24
-    n_kv_head: int = 8
-    n_embd: int = 3072
+    vocab_size: int = 166144
+    context_length: int = 262144
+    n_layer: int = 32
+    n_head: int = 20
+    n_kv_head: int = 4
+    n_embd: int = 2560
     head_dim: int = 128
-    intermediate_size: int = 8192
-    rope_theta: float = 1000000.0
+    intermediate_size: int = 10496
+    rope_theta: float = 70000000
     norm_eps: float = 1e-5
-    tie_embeddings: bool = True
+    tie_embeddings: bool = False
 
 
 PRESETS: dict[str, Config] = {

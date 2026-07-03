@@ -30,10 +30,10 @@ TECH_REPORT_URL = "https://arxiv.org/abs/2601.21204"
 @dataclass
 class Config:
     vocab_size: int = 131072
-    context_length: int = 4096
+    context_length: int = 327680
     n_layer: int = 40
-    n_embd: int = 4096
-    n_head: int = 64
+    n_embd: int = 3072
+    n_head: int = 32
     q_lora_rank: int = 1536
     kv_lora_rank: int = 512
     qk_nope_head_dim: int = 128
@@ -45,8 +45,8 @@ class Config:
     moe_intermediate_size: int = 1024
     dense_intermediate_size: int = 8192
     first_k_dense: int = 1
-    routed_scaling_factor: float = 2.5
-    rope_theta: float = 1000000.0
+    routed_scaling_factor: float = 6.0
+    rope_theta: float = 5000000.0
     norm_eps: float = 1e-5
     tie_embeddings: bool = False
 

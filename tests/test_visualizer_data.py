@@ -32,6 +32,18 @@ def test_index_lists_every_registry_entry(payloads):
     index = payloads["index.json"]
     assert index["model_count"] == len(registry.REGISTRY)
     assert [model["slug"] for model in index["models"]] == [entry.slug for entry in registry.REGISTRY]
+    assert all(model["gallery_card_id"] for model in index["models"])
+    assert index["data_version"]
+    assert [model["slug"] for model in index["learning_path"]] == [entry.slug for entry in registry.tier_entries(1)]
+    assert [model["path_order"] for model in index["learning_path"]] == list(range(1, len(index["learning_path"]) + 1))
+
+
+def test_payload_data_versions_match_index(payloads):
+    version = payloads["index.json"]["data_version"]
+    for filename, payload in payloads.items():
+        if filename == "index.json":
+            continue
+        assert payload["data_version"] == version
 
 
 def test_palette_tables_match_registry():
@@ -97,6 +109,38 @@ def test_reference_palettes_match_source_screenshots(payloads):
     assert llama == {"accent": "#d01070", "accentFill": "#d8b0c0"}
     assert deepseek_v3 == {"accent": "#f86050", "accentFill": "#f09088"}
     assert deepseek_r1 == deepseek_v3
+
+
+def test_payload_exposes_gallery_card_id_and_marked_notes(payloads):
+    gpt2 = payloads["gpt2-xl.json"]
+    assert gpt2["gallery_card_id"] == "gpt-2-xl-1-5b"
+
+    deepseek = payloads["deepseek-v3.2.json"]
+    assert deepseek["gallery_card_id"] == "deepseek-v3-2"
+    assert any(
+        note["kind"] == "assumption"
+        and note["text"].startswith("sparse key-selection/index sharing is documented")
+        for note in deepseek["notes"]
+    )
+
+    granite = payloads["granite-4.1.json"]
+    assert any(note["kind"] == "note" and "Mamba/transformer hybrid" in note["text"] for note in granite["notes"])
+
+
+def test_wave2_assumption_notes_are_exposed(payloads):
+    expected = {
+        "glm-5.1": "sparse key selection / index sharing is documented",
+        "deepseek-v4-flash": "compressed-sparse key selection is documented",
+        "mimo-v2-flash": "exact global cadence is not explicit",
+        "arcee-trinity-large": "exact sliding/global cadence",
+        "lfm2.5-8b-a1b": "short-conv + attention/LIV-style mixers",
+        "gemma4-26b-a4b": "modeled with the generic MoE",
+        "nemotron3-super-120b": "latent-MoE compression simplified",
+        "ling-2.6": "full-attention layers use GQA here, not MLA",
+        "kimi-linear": "the real Kimi Linear uses MLA",
+    }
+    for slug, needle in expected.items():
+        assert any(needle in note["text"] for note in payloads[f"{slug}.json"]["notes"]), slug
 
 
 @pytest.mark.parametrize("entry", registry.REGISTRY, ids=lambda entry: entry.slug)
@@ -373,6 +417,16 @@ def test_source_lines_round_trip(entry, payloads):
     payload = payloads[f"{entry.slug}.json"]
     source_path = ROOT / payload["source_path"]
     assert payload["source_lines"] == source_path.read_text(encoding="utf-8").splitlines()
+    assert len(payload["source_tokens"]) == len(payload["source_lines"])
+    for source_line, token_line in zip(payload["source_lines"], payload["source_tokens"], strict=True):
+        assert "".join(token["t"] for token in token_line) == source_line
+
+
+def test_build_time_highlighting_marks_python_tokens(payloads):
+    tokens = [token for line in payloads["gpt2-xl.json"]["source_tokens"] for token in line]
+    assert any(token == {"t": "class", "c": "py-keyword"} for token in tokens)
+    assert any(token.get("t") == "Config" and token.get("c") == "py-class" for token in tokens)
+    assert any(token.get("c") == "py-comment" for token in tokens)
 
 
 def test_committed_visualizer_data_is_current(payloads):

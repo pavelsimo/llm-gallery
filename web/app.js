@@ -33,6 +33,61 @@ async function fetchJson(path) {
   return response.json();
 }
 
+let DATA_VERSION = "";
+
+function versionedDataPath(path, version = DATA_VERSION) {
+  if (!version) return path;
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}v=${encodeURIComponent(version)}`;
+}
+
+function modelDataPath(slug, version = DATA_VERSION) {
+  return versionedDataPath(`data/${encodeURIComponent(slug)}.json`, version);
+}
+
+const THEME_STORAGE_KEY = "llm-gallery-theme";
+
+function initTheme() {
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  if (stored === "light" || stored === "dark") {
+    document.documentElement.dataset.theme = stored;
+  }
+  updateThemeButtons();
+  document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const current = effectiveTheme();
+      const next = current === "dark" ? "light" : "dark";
+      localStorage.setItem(THEME_STORAGE_KEY, next);
+      document.documentElement.dataset.theme = next;
+      updateThemeButtons();
+    });
+  });
+}
+
+function effectiveTheme() {
+  const manual = document.documentElement.dataset.theme;
+  if (manual === "light" || manual === "dark") return manual;
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function updateThemeButtons() {
+  const theme = effectiveTheme();
+  document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+    button.textContent = theme === "dark" ? "Light" : "Dark";
+    button.setAttribute("aria-pressed", String(theme === "dark"));
+  });
+}
+
+function modelUrl(slug, extra = {}) {
+  const params = new URLSearchParams({ model: slug, ...extra });
+  return `viewer.html?${params.toString()}`;
+}
+
+function galleryHref(model) {
+  if (!model.links?.gallery) return "";
+  return model.gallery_card_id ? `${model.links.gallery}#${model.gallery_card_id}` : model.links.gallery;
+}
+
 function templateLabel(template) {
   return {
     dense: "Dense",
@@ -61,18 +116,6 @@ function roleLabel(role) {
   }[role] || role;
 }
 
-const PY_KEYWORDS = new Set([
-  "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class",
-  "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global",
-  "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return",
-  "try", "while", "with", "yield",
-]);
-
-const PY_BUILTINS = new Set([
-  "bool", "dict", "enumerate", "float", "int", "len", "list", "max", "min", "next", "object",
-  "print", "range", "set", "str", "sum", "super", "tuple", "zip", "self", "cls",
-]);
-
 function appendToken(fragment, text, className) {
   if (!text) return;
   if (!className) {
@@ -85,127 +128,17 @@ function appendToken(fragment, text, className) {
   fragment.append(span);
 }
 
-function highlightedPythonLine(line, state) {
-  const fragment = document.createDocumentFragment();
-  let i = 0;
-  let expectName = "";
-  let importMode = false;
-  const firstCode = line.search(/\S/);
-
-  while (i < line.length) {
-    if (state.tripleQuote) {
-      const end = line.indexOf(state.tripleQuote, i);
-      if (end === -1) {
-        appendToken(fragment, line.slice(i), "py-string");
-        i = line.length;
-      } else {
-        appendToken(fragment, line.slice(i, end + 3), "py-string");
-        i = end + 3;
-        state.tripleQuote = "";
-      }
-      continue;
-    }
-
-    const char = line[i];
-    if (/\s/.test(char)) {
-      let j = i + 1;
-      while (j < line.length && /\s/.test(line[j])) j += 1;
-      appendToken(fragment, line.slice(i, j));
-      i = j;
-      continue;
-    }
-
-    if (char === "#") {
-      appendToken(fragment, line.slice(i), "py-comment");
-      break;
-    }
-
-    if (char === "@" && i === firstCode) {
-      let j = i + 1;
-      while (j < line.length && /[\w.]/.test(line[j])) j += 1;
-      appendToken(fragment, line.slice(i, j), "py-decorator");
-      i = j;
-      continue;
-    }
-
-    if (char === "\"" || char === "'") {
-      const triple = line.slice(i, i + 3);
-      if (triple === char.repeat(3)) {
-        const end = line.indexOf(triple, i + 3);
-        if (end === -1) {
-          appendToken(fragment, line.slice(i), "py-string");
-          state.tripleQuote = triple;
-          i = line.length;
-        } else {
-          appendToken(fragment, line.slice(i, end + 3), "py-string");
-          i = end + 3;
-        }
-      } else {
-        let j = i + 1;
-        while (j < line.length) {
-          if (line[j] === "\\") {
-            j += 2;
-          } else if (line[j] === char) {
-            j += 1;
-            break;
-          } else {
-            j += 1;
-          }
-        }
-        appendToken(fragment, line.slice(i, j), "py-string");
-        i = j;
-      }
-      continue;
-    }
-
-    if (/\d/.test(char)) {
-      let j = i + 1;
-      while (j < line.length && /[\w._]/.test(line[j])) j += 1;
-      appendToken(fragment, line.slice(i, j), "py-number");
-      i = j;
-      continue;
-    }
-
-    if (/[A-Za-z_]/.test(char)) {
-      let j = i + 1;
-      while (j < line.length && /[A-Za-z0-9_]/.test(line[j])) j += 1;
-      const word = line.slice(i, j);
-      if (expectName) {
-        appendToken(fragment, word, expectName);
-        expectName = "";
-      } else if (PY_KEYWORDS.has(word)) {
-        appendToken(fragment, word, "py-keyword");
-        if (word === "def") expectName = "py-function";
-        if (word === "class") expectName = "py-class";
-        importMode = word === "import" || word === "from";
-      } else if (PY_BUILTINS.has(word)) {
-        appendToken(fragment, word, word === "self" || word === "cls" ? "py-self" : "py-builtin");
-      } else if (importMode && word !== "as") {
-        appendToken(fragment, word, "py-module");
-      } else {
-        appendToken(fragment, word);
-      }
-      i = j;
-      continue;
-    }
-
-    appendToken(fragment, char, /[=+\-*/%<>!&|^~:.,()[\]{}]/.test(char) ? "py-operator" : "");
-    i += 1;
-  }
-
-  if (!line) appendToken(fragment, " ");
-  return fragment;
-}
-
 function initIndex() {
   const grid = $("#modelGrid");
   const searchInput = $("#searchInput");
   const tierFilter = $("#tierFilter");
   const templateFilter = $("#templateFilter");
   const resultMeta = $("#resultMeta");
+  const learningRail = $("#learningRail");
 
   fetchJson("data/index.json")
     .then((data) => {
+      DATA_VERSION = data.data_version || "";
       const models = data.models;
       for (const template of data.templates) {
         const option = document.createElement("option");
@@ -231,6 +164,7 @@ function initIndex() {
         grid.replaceChildren(...filtered.map(modelCard));
       }
 
+      renderLearningRail(learningRail, data.learning_path || []);
       searchInput.addEventListener("input", render);
       tierFilter.addEventListener("change", render);
       templateFilter.addEventListener("change", render);
@@ -241,9 +175,28 @@ function initIndex() {
     });
 }
 
+function renderLearningRail(root, models) {
+  if (!root || !models.length) return;
+  const heading = el("div", "learning-heading");
+  heading.append(el("span", "badge", "Learning path"));
+  heading.append(el("p", "", "Start with the core mechanisms, then branch into variants."));
+  const links = models.map((model) => {
+    const anchor = el("a", "learning-card");
+    anchor.href = modelUrl(model.slug);
+    anchor.dataset.prefetchSlug = model.slug;
+    anchor.append(el("span", "learning-step", String(model.path_order)));
+    anchor.append(el("strong", "", model.name));
+    anchor.append(el("span", "", templateLabel(model.template)));
+    installModelPrefetch(anchor, model.slug);
+    return anchor;
+  });
+  root.replaceChildren(heading, ...links);
+}
+
 function modelCard(model) {
   const card = el("a", "model-card");
   card.href = `viewer.html?model=${encodeURIComponent(model.slug)}`;
+  installModelPrefetch(card, model.slug);
 
   const top = el("div", "card-top");
   top.append(el("span", "badge", `Tier ${model.tier}`));
@@ -252,10 +205,26 @@ function modelCard(model) {
   const title = el("h2", "", model.name);
   const slug = el("p", "slug", model.slug);
   const arch = el("p", "arch", model.archetype);
-  const stats = el("p", "stats", `${model.line_count} lines · ${Object.keys(model.section_role_counts).length} section types`);
+  const stats = el(
+    "p",
+    "stats",
+    [model.parameter_scale, model.release_year, `${Object.keys(model.section_role_counts).length} section types`]
+      .filter(Boolean)
+      .join(" · ")
+  );
 
   card.append(top, title, slug, arch, stats);
   return card;
+}
+
+function installModelPrefetch(node, slug) {
+  node.addEventListener(
+    "pointerenter",
+    () => {
+      fetch(modelDataPath(slug), { priority: "low" }).catch(() => {});
+    },
+    { once: true }
+  );
 }
 
 function errorBox(error) {
@@ -272,13 +241,26 @@ function initViewer() {
   const requestedSection = params.get("section");
   const requestedTarget = params.get("target");
 
-  Promise.all([fetchJson("data/index.json"), requestedSlug ? Promise.resolve(null) : fetchJson("data/index.json")])
-    .then(([index]) => {
-      const slug = requestedSlug || index.models[0].slug;
+  fetchJson("data/index.json")
+    .then((index) => {
+      DATA_VERSION = index.data_version || "";
+      const known = new Set(index.models.map((model) => model.slug));
+      const fallback = index.models[0]?.slug;
+      const slug = requestedSlug && known.has(requestedSlug) ? requestedSlug : fallback;
+      if (!slug) throw new Error("No models are available in data/index.json");
       populateModelSelect(index.models, slug);
-      return fetchJson(`data/${encodeURIComponent(slug)}.json`).then((model) => ({ index, model }));
+      setupModelNav(index.models, slug);
+      if (requestedSlug && requestedSlug !== slug) {
+        showNotice(`Unknown model "${requestedSlug}" - showing ${slug} instead.`);
+        const clean = new URLSearchParams(window.location.search);
+        clean.set("model", slug);
+        clean.delete("section");
+        clean.delete("target");
+        window.history.replaceState(null, "", `${window.location.pathname}?${clean.toString()}`);
+      }
+      return fetchJson(modelDataPath(slug, index.data_version)).then((model) => ({ index, model }));
     })
-    .then(({ model }) => renderViewer(model, requestedSection, requestedTarget))
+    .then(({ index, model }) => renderViewer(model, index, requestedSection, requestedTarget))
     .catch((error) => {
       $(".viewer-shell").replaceChildren(errorBox(error));
     });
@@ -296,21 +278,46 @@ function populateModelSelect(models, activeSlug) {
     })
   );
   select.addEventListener("change", () => {
-    window.location.href = `viewer.html?model=${encodeURIComponent(select.value)}`;
+    window.location.href = modelUrl(select.value);
   });
 }
 
-function renderViewer(model, requestedSection, requestedTarget) {
+function setupModelNav(models, activeSlug) {
+  const index = models.findIndex((model) => model.slug === activeSlug);
+  const prev = $("#prevModel");
+  const next = $("#nextModel");
+  if (index < 0 || !prev || !next) return;
+  const prevModel = models[(index - 1 + models.length) % models.length];
+  const nextModel = models[(index + 1) % models.length];
+  prev.addEventListener("click", () => {
+    window.location.href = modelUrl(prevModel.slug);
+  });
+  next.addEventListener("click", () => {
+    window.location.href = modelUrl(nextModel.slug);
+  });
+}
+
+function showNotice(message) {
+  const notice = $("#viewerNotice");
+  if (!notice) return;
+  notice.textContent = message;
+  notice.hidden = false;
+}
+
+function renderViewer(model, index, requestedSection, requestedTarget) {
   document.title = `${model.name} · visualizer`;
   $("#viewerSlug").textContent = model.slug;
   $("#viewerName").textContent = model.name;
   $("#sourcePath").textContent = model.source_path;
   $("#modelFacts").replaceChildren(...modelFactNodes(model));
+  renderRelatedModels(index.models, model);
   window.currentModel = model;
+  window.currentIndex = index;
   window.currentTargetId = "";
   renderDiagram(model);
   renderSectionNav(model.sections);
   renderCode(model);
+  setupViewerActions(model, index);
 
   const requested = resolveTarget(model, requestedTarget) || resolveTarget(model, requestedSection);
   const initialRoles = model.template === "hybrid" ? ["mixer", "attention", "model"] : ["attention", "mixer", "model"];
@@ -325,12 +332,78 @@ function modelFactNodes(model) {
   facts.push(pill(templateLabel(model.template)));
   if (model.release) facts.push(pill(model.release));
   facts.push(el("p", "fact-line", model.archetype));
+  const config = compactConfigFacts(model.config || {});
+  if (config.length) {
+    const configWrap = el("div", "config-facts");
+    configWrap.replaceChildren(...config.map(([key, value]) => pill(`${key}: ${formatValue(value)}`)));
+    facts.push(configWrap);
+  }
+  for (const note of model.notes || []) {
+    const node = pill(`${note.kind}: ${note.text}`);
+    node.classList.add("note-pill", `note-${note.kind}`);
+    facts.push(node);
+  }
 
   const links = el("div", "fact-links");
-  if (model.links.gallery) links.append(link("Gallery", model.links.gallery));
+  const gallery = galleryHref(model);
+  if (gallery) links.append(link("Gallery", gallery));
   if (model.links.tech_report) links.append(link("Tech report", model.links.tech_report));
   facts.push(links);
   return facts;
+}
+
+function compactConfigFacts(config) {
+  const preferred = [
+    "vocab_size",
+    "context_length",
+    "n_layer",
+    "n_embd",
+    "hidden_size",
+    "n_head",
+    "n_kv_head",
+    "n_experts",
+    "n_experts_per_tok",
+  ];
+  const keys = preferred.filter((key) => config[key] !== undefined);
+  return keys.slice(0, 8).map((key) => [key, config[key]]);
+}
+
+function formatValue(value) {
+  if (value === undefined) return "";
+  if (value === null) return "null";
+  if (typeof value === "number") return Number.isInteger(value) ? value.toLocaleString() : String(value);
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (Array.isArray(value)) return value.join(", ");
+  return String(value);
+}
+
+function renderRelatedModels(models, active) {
+  const wrap = $("#relatedModels");
+  if (!wrap) return;
+  const archWords = new Set(active.archetype.toLowerCase().split(/[^a-z0-9.]+/).filter((word) => word.length > 3));
+  const scored = models
+    .filter((model) => model.slug !== active.slug)
+    .map((model) => {
+      const modelWords = new Set(model.archetype.toLowerCase().split(/[^a-z0-9.]+/).filter((word) => word.length > 3));
+      let score = 0;
+      if (model.template === active.template) score += 4;
+      if (model.tier === active.tier) score += 1;
+      for (const word of archWords) {
+        if (modelWords.has(word)) score += 1;
+      }
+      return { model, score };
+    })
+    .filter((item) => item.score > 2)
+    .sort((a, b) => b.score - a.score || a.model.slug.localeCompare(b.model.slug))
+    .slice(0, 6);
+  const label = el("span", "pill", "Related");
+  const links = scored.map(({ model }) => {
+    const anchor = el("a", "", model.name);
+    anchor.href = modelUrl(model.slug);
+    anchor.title = `${templateLabel(model.template)} · ${model.archetype}`;
+    return anchor;
+  });
+  wrap.replaceChildren(label, ...links);
 }
 
 function pill(text) {
@@ -353,6 +426,7 @@ function renderSectionNav(sections) {
       button.type = "button";
       button.dataset.sectionId = section.id;
       button.dataset.targetId = section.id;
+      button.dataset.searchText = `${section.role} ${section.label} ${section.summary || ""}`.toLowerCase();
       button.title = `${section.line_start}-${section.line_end}`;
       button.append(el("span", "chip-role", roleLabel(section.role)));
       button.append(el("span", "chip-label", section.label));
@@ -365,7 +439,6 @@ function renderSectionNav(sections) {
 function renderCode(model) {
   const code = $("#codeLines");
   const fragment = document.createDocumentFragment();
-  const highlightState = { tripleQuote: "" };
   model.source_lines.forEach((line, index) => {
     const number = index + 1;
     const row = el("span", "code-line");
@@ -377,18 +450,151 @@ function renderCode(model) {
 
     const gutter = el("span", "line-number", String(number));
     const text = el("span", "line-text");
-    text.append(highlightedPythonLine(line, highlightState));
+    text.append(renderHighlightedLine(model.source_tokens?.[index], line));
     row.append(gutter, text);
     fragment.append(row);
   });
   code.replaceChildren(fragment);
 }
 
-function renderDiagram(model) {
+function renderHighlightedLine(tokens, fallbackLine) {
+  const fragment = document.createDocumentFragment();
+  if (!Array.isArray(tokens) || !tokens.length) {
+    appendToken(fragment, fallbackLine || " ");
+    return fragment;
+  }
+  for (const token of tokens) {
+    appendToken(fragment, token.t, token.c || "");
+  }
+  return fragment;
+}
+
+function setupViewerActions(model, index) {
+  const compareLink = $("#compareLink");
+  if (compareLink) {
+    const next = nextModel(index.models, model.slug);
+    compareLink.href = `compare.html?left=${encodeURIComponent(model.slug)}&right=${encodeURIComponent(next.slug)}`;
+  }
+
+  const search = $("#codeSearch");
+  if (search) {
+    search.addEventListener("input", () => applyCodeSearch(model, search.value));
+  }
+
+  $("#copyActiveLink")?.addEventListener("click", () => copyText(window.location.href));
+  $("#copySection")?.addEventListener("click", () => {
+    const target = resolveTarget(model, window.currentTargetId);
+    if (target) copyText(linesForRange(model, target.line_start, target.line_end));
+  });
+  $("#copyCode")?.addEventListener("click", () => copyText(model.source_lines.join("\n")));
+
+  document.addEventListener("keydown", function shortcutListener(event) {
+    handleViewerShortcut(event, model, index);
+  });
+}
+
+function nextModel(models, slug, direction = 1) {
+  const index = models.findIndex((model) => model.slug === slug);
+  if (index < 0) return models[0];
+  return models[(index + direction + models.length) % models.length];
+}
+
+function isTypingTarget(target) {
+  return ["INPUT", "SELECT", "TEXTAREA"].includes(target?.tagName) || target?.isContentEditable;
+}
+
+function handleViewerShortcut(event, model, index) {
+  if (isTypingTarget(event.target)) {
+    if (event.key === "Escape" && event.target.id === "codeSearch") {
+      event.target.value = "";
+      applyCodeSearch(model, "");
+      event.target.blur();
+    }
+    return;
+  }
+  if (event.key === "/") {
+    event.preventDefault();
+    $("#codeSearch")?.focus();
+  } else if (event.key === "[") {
+    window.location.href = modelUrl(nextModel(index.models, model.slug, -1).slug);
+  } else if (event.key === "]") {
+    window.location.href = modelUrl(nextModel(index.models, model.slug, 1).slug);
+  } else if (event.key === "j" || event.key === "k") {
+    event.preventDefault();
+    activateAdjacentSection(model, event.key === "j" ? 1 : -1);
+  } else if (event.key.toLowerCase() === "c") {
+    copyText(window.location.href);
+  }
+}
+
+function activateAdjacentSection(model, direction) {
+  const current = resolveTarget(model, window.currentTargetId);
+  const currentSectionId = current ? parentSectionId(current) : model.sections[0]?.id;
+  const index = model.sections.findIndex((section) => section.id === currentSectionId);
+  if (index < 0) return;
+  const next = model.sections[(index + direction + model.sections.length) % model.sections.length];
+  activateTarget(model, next.id);
+}
+
+function linesForRange(model, start, end) {
+  return model.source_lines.slice(start - 1, end).join("\n");
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const area = el("textarea");
+    area.value = text;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.append(area);
+    area.select();
+    document.execCommand("copy");
+    area.remove();
+  }
+}
+
+function applyCodeSearch(model, rawQuery) {
+  const query = rawQuery.trim().toLowerCase();
+  const matchingSectionIds = new Set();
+  const matchingTargetIds = new Set();
+
+  if (query) {
+    for (const section of model.sections) {
+      const source = linesForRange(model, section.line_start, section.line_end).toLowerCase();
+      if (`${section.role} ${section.label} ${section.summary || ""} ${source}`.toLowerCase().includes(query)) {
+        matchingSectionIds.add(section.id);
+        matchingTargetIds.add(section.id);
+      }
+    }
+    for (const anchor of model.anchors || []) {
+      const source = linesForRange(model, anchor.line_start, anchor.line_end).toLowerCase();
+      if (`${anchor.role} ${anchor.label} ${source}`.toLowerCase().includes(query)) {
+        matchingSectionIds.add(anchor.section_id);
+        matchingTargetIds.add(anchor.id);
+      }
+    }
+  }
+
+  document.querySelectorAll(".section-chip").forEach((chip) => {
+    chip.hidden = Boolean(query) && !matchingSectionIds.has(chip.dataset.sectionId);
+  });
+  document
+    .querySelectorAll(".diagram-node, .diagram-group, .diagram-annotation, .diagram-hotspot")
+    .forEach((node) => {
+      const target = node.dataset.targetId;
+      const section = node.dataset.sectionId;
+      const match = !query || matchingTargetIds.has(target) || matchingSectionIds.has(section);
+      node.classList.toggle("search-dim", !match);
+    });
+}
+
+function renderDiagram(model, wrap = $("#diagramWrap")) {
   if (model.diagram.artwork) {
-    renderArtworkDiagram(model);
+    renderArtworkDiagram(model, wrap);
   } else {
-    renderGeneratedDiagram(model);
+    renderGeneratedDiagram(model, wrap);
   }
   restoreActiveDiagramTarget(model);
 }
@@ -409,8 +615,7 @@ function diagramSvg(model, viewBox) {
   return svg;
 }
 
-function renderArtworkDiagram(model) {
-  const wrap = $("#diagramWrap");
+function renderArtworkDiagram(model, wrap = $("#diagramWrap")) {
   const diagram = model.diagram;
   const artwork = diagram.artwork;
   const svg = diagramSvg(model, `0 0 ${artwork.width} ${artwork.height}`);
@@ -430,11 +635,10 @@ function renderArtworkDiagram(model) {
     }
   }
 
-  wrap.replaceChildren(svg);
+  mountDiagram(wrap, svg);
 }
 
-function renderGeneratedDiagram(model) {
-  const wrap = $("#diagramWrap");
+function renderGeneratedDiagram(model, wrap = $("#diagramWrap")) {
   const diagram = model.diagram;
   const svg = diagramSvg(model, diagram.viewBox);
 
@@ -471,10 +675,126 @@ function renderGeneratedDiagram(model) {
     if (layoutLeader) annotationLeaderLayouts.push(layoutLeader);
   }
 
-  wrap.replaceChildren(svg);
+  mountDiagram(wrap, svg);
   for (const layoutLeader of annotationLeaderLayouts) {
     layoutLeader();
   }
+}
+
+function mountDiagram(wrap, svg) {
+  if (!wrap) return;
+  const viewport = el("div", "diagram-viewport");
+  viewport.setAttribute("tabindex", "0");
+  viewport.setAttribute("aria-label", "Pan and zoom diagram");
+  viewport.append(svg);
+
+  const controls = el("div", "zoom-controls");
+  const zoomOut = el("button", "zoom-button", "-");
+  const reset = el("button", "zoom-button", "Reset");
+  const zoomIn = el("button", "zoom-button", "+");
+  for (const button of [zoomOut, reset, zoomIn]) {
+    button.type = "button";
+  }
+  zoomOut.setAttribute("aria-label", "Zoom out");
+  reset.setAttribute("aria-label", "Reset zoom");
+  zoomIn.setAttribute("aria-label", "Zoom in");
+  controls.append(zoomOut, reset, zoomIn);
+  wrap.replaceChildren(viewport, controls);
+  installDiagramViewport(svg, viewport, {
+    zoomIn,
+    zoomOut,
+    reset,
+  });
+}
+
+function installDiagramViewport(svg, viewport, controls) {
+  const base = parseViewBox(svg.getAttribute("viewBox"));
+  if (!base) return;
+  const state = { ...base };
+  const minScale = 0.35;
+  const maxScale = 4;
+
+  function apply() {
+    svg.setAttribute("viewBox", `${state.x} ${state.y} ${state.w} ${state.h}`);
+  }
+
+  function zoom(factor, center = { x: state.x + state.w / 2, y: state.y + state.h / 2 }) {
+    const scale = base.w / state.w;
+    const nextScale = Math.min(maxScale, Math.max(minScale, scale * factor));
+    const nextW = base.w / nextScale;
+    const nextH = base.h / nextScale;
+    const rx = (center.x - state.x) / state.w;
+    const ry = (center.y - state.y) / state.h;
+    state.x = center.x - nextW * rx;
+    state.y = center.y - nextH * ry;
+    state.w = nextW;
+    state.h = nextH;
+    apply();
+  }
+
+  controls.zoomIn.addEventListener("click", () => zoom(1.25));
+  controls.zoomOut.addEventListener("click", () => zoom(0.8));
+  controls.reset.addEventListener("click", () => {
+    Object.assign(state, base);
+    apply();
+  });
+
+  viewport.addEventListener(
+    "wheel",
+    (event) => {
+      event.preventDefault();
+      const point = svgPointForEvent(svg, event, state);
+      zoom(event.deltaY < 0 ? 1.12 : 0.88, point);
+    },
+    { passive: false }
+  );
+
+  let drag = null;
+  viewport.addEventListener("pointerdown", (event) => {
+    if (isDiagramControlTarget(event.target)) return;
+    drag = { x: event.clientX, y: event.clientY, view: { ...state } };
+    viewport.classList.add("dragging");
+    viewport.setPointerCapture(event.pointerId);
+  });
+  viewport.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    const rect = svg.getBoundingClientRect();
+    const dx = ((event.clientX - drag.x) / rect.width) * drag.view.w;
+    const dy = ((event.clientY - drag.y) / rect.height) * drag.view.h;
+    state.x = drag.view.x - dx;
+    state.y = drag.view.y - dy;
+    apply();
+  });
+  viewport.addEventListener("pointerup", () => {
+    drag = null;
+    viewport.classList.remove("dragging");
+  });
+  viewport.addEventListener("pointercancel", () => {
+    drag = null;
+    viewport.classList.remove("dragging");
+  });
+}
+
+function isDiagramControlTarget(target) {
+  return Boolean(
+    target.closest?.(
+      "button, .diagram-node, .diagram-group, .diagram-annotation, .diagram-hotspot"
+    )
+  );
+}
+
+function parseViewBox(value) {
+  const parts = String(value || "").split(/\s+/).map(Number);
+  if (parts.length !== 4 || parts.some((part) => !Number.isFinite(part))) return null;
+  return { x: parts[0], y: parts[1], w: parts[2], h: parts[3] };
+}
+
+function svgPointForEvent(svg, event, viewBox) {
+  const rect = svg.getBoundingClientRect();
+  return {
+    x: viewBox.x + ((event.clientX - rect.left) / rect.width) * viewBox.w,
+    y: viewBox.y + ((event.clientY - rect.top) / rect.height) * viewBox.h,
+  };
 }
 
 function applyDiagramPalette(svg, palette = {}) {
@@ -511,11 +831,13 @@ function attachInteractiveTarget(node, item) {
   if (node.dataset.targetId) {
     node.setAttribute("tabindex", "0");
     node.setAttribute("role", "button");
-    node.addEventListener("click", () => activateTarget(window.currentModel, node.dataset.targetId));
+    node.addEventListener("click", () => {
+      if (window.currentModel) activateTarget(window.currentModel, node.dataset.targetId);
+    });
     node.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        activateTarget(window.currentModel, node.dataset.targetId);
+        if (window.currentModel) activateTarget(window.currentModel, node.dataset.targetId);
       }
     });
   }
@@ -847,7 +1169,7 @@ function activateTarget(model, targetId, options = {}) {
   $("#activeRange").textContent = `${target.label} · lines ${target.line_start}-${target.line_end}`;
   if (scroll) {
     const start = document.querySelector(`.code-line[data-line="${target.line_start}"]`);
-    if (start) start.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (start) centerCodeLine(start);
   }
   if (updateUrl) {
     const params = new URLSearchParams(window.location.search);
@@ -862,6 +1184,109 @@ function activateTarget(model, targetId, options = {}) {
   }
 }
 
+function centerCodeLine(line) {
+  const codeBlock = line.closest(".code-block");
+  if (!codeBlock) {
+    line.scrollIntoView({ block: "center", behavior: "smooth" });
+    return;
+  }
+
+  const codeRect = codeBlock.getBoundingClientRect();
+  const lineRect = line.getBoundingClientRect();
+  const lineCenter = lineRect.top - codeRect.top + codeBlock.scrollTop + lineRect.height / 2;
+  const targetTop = lineCenter - codeBlock.clientHeight / 2;
+  codeBlock.scrollTo({
+    top: Math.max(0, targetTop),
+    behavior: "auto",
+  });
+
+  const updatedCodeRect = codeBlock.getBoundingClientRect();
+  if (updatedCodeRect.top < 0 || updatedCodeRect.bottom > window.innerHeight) {
+    codeBlock.scrollIntoView({ block: "nearest", behavior: "auto" });
+  }
+}
+
+function initCompare() {
+  const params = new URLSearchParams(window.location.search);
+  fetchJson("data/index.json")
+    .then((index) => {
+      DATA_VERSION = index.data_version || "";
+      const first = index.models[0]?.slug;
+      const second = index.models[1]?.slug || first;
+      const known = new Set(index.models.map((model) => model.slug));
+      const leftSlug = known.has(params.get("left")) ? params.get("left") : first;
+      const rightSlug = known.has(params.get("right")) ? params.get("right") : second;
+      populateCompareSelect($("#leftModelSelect"), index.models, leftSlug, "left", rightSlug);
+      populateCompareSelect($("#rightModelSelect"), index.models, rightSlug, "right", leftSlug);
+      return Promise.all([
+        fetchJson(modelDataPath(leftSlug, index.data_version)),
+        fetchJson(modelDataPath(rightSlug, index.data_version)),
+      ]).then(([left, right]) => ({ left, right }));
+    })
+    .then(({ left, right }) => renderCompare(left, right))
+    .catch((error) => {
+      $(".compare-shell").replaceChildren(errorBox(error));
+    });
+}
+
+function populateCompareSelect(select, models, activeSlug, side, otherSlug) {
+  if (!select) return;
+  select.replaceChildren(
+    ...models.map((model) => {
+      const option = document.createElement("option");
+      option.value = model.slug;
+      option.textContent = model.name;
+      option.selected = model.slug === activeSlug;
+      return option;
+    })
+  );
+  select.addEventListener("change", () => {
+    const params = new URLSearchParams(window.location.search);
+    params.set(side, select.value);
+    params.set(side === "left" ? "right" : "left", otherSlug);
+    window.location.href = `compare.html?${params.toString()}`;
+  });
+}
+
+function renderCompare(left, right) {
+  window.currentModel = null;
+  document.title = `${left.name} vs ${right.name} · compare`;
+  $("#leftModelName").textContent = left.name;
+  $("#rightModelName").textContent = right.name;
+  $("#leftViewerLink").href = modelUrl(left.slug);
+  $("#rightViewerLink").href = modelUrl(right.slug);
+  $("#leftModelFacts").replaceChildren(...modelFactNodes(left));
+  $("#rightModelFacts").replaceChildren(...modelFactNodes(right));
+  renderDiagram(left, $("#leftDiagramWrap"));
+  renderDiagram(right, $("#rightDiagramWrap"));
+  renderConfigDiff(left, right);
+}
+
+function renderConfigDiff(left, right) {
+  const table = $("#configDiffTable");
+  const keys = Array.from(new Set([...Object.keys(left.config || {}), ...Object.keys(right.config || {})])).sort();
+  const head = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  for (const text of ["Field", left.slug, right.slug]) {
+    headRow.append(el("th", "", text));
+  }
+  head.append(headRow);
+
+  const body = document.createElement("tbody");
+  for (const key of keys) {
+    const leftValue = left.config?.[key];
+    const rightValue = right.config?.[key];
+    const same = JSON.stringify(leftValue) === JSON.stringify(rightValue);
+    const row = document.createElement("tr");
+    row.className = same ? "same" : "diff";
+    row.append(el("td", "", key), el("td", "", formatValue(leftValue)), el("td", "", formatValue(rightValue)));
+    body.append(row);
+  }
+  table.replaceChildren(head, body);
+}
+
 const page = document.body.dataset.page;
+initTheme();
 if (page === "index") initIndex();
 if (page === "viewer") initViewer();
+if (page === "compare") initCompare();

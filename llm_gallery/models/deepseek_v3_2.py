@@ -1,7 +1,7 @@
 """DeepSeek V3.2 (671B)
 
 DeepSeek V3.2: V3 plus a sparse-attention mechanism (DeepSeek Sparse Attention).
-ASSUMPTION: the sparse key-selection is omitted here; this uses full MLA attention.
+ASSUMPTION: sparse key-selection/index sharing is documented, but this educational body uses full MLA attention.
 
 Architecture : Multi-head Latent Attention (MLA) · fine-grained MoE · shared experts
 Reference    : deepseek_v3.py  ← read this first; all building blocks are annotated there
@@ -31,7 +31,7 @@ TECH_REPORT_URL = "https://arxiv.org/pdf/2512.02556"
 @dataclass
 class Config:
     vocab_size: int = 129280
-    context_length: int = 4096
+    context_length: int = 163840
     n_layer: int = 61
     n_embd: int = 7168
     n_head: int = 128

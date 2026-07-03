@@ -30,24 +30,24 @@ TECH_REPORT_URL = "https://research.nvidia.com/labs/nemotron/files/NVIDIA-Nemotr
 @dataclass
 class Config:
     vocab_size: int = 131072
-    context_length: int = 8192
+    context_length: int = 262144
     n_layer: int = 80
     n_embd: int = 8192
     n_head: int = 64
-    n_kv_head: int = 8
+    n_kv_head: int = 2
     head_dim: int = 128
-    rope_theta: float = 1000000.0
-    attn_every: int = 6
+    rope_theta: float = 10000
+    layer_pattern: str = "MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*ME"
     mamba_expand: int = 2
     mamba_d_state: int = 128
     mamba_d_conv: int = 4
     mamba_dt_rank: int = 128
     use_moe: bool = True
-    n_experts: int = 256
-    n_experts_per_tok: int = 8
-    moe_intermediate_size: int = 2048
+    n_experts: int = 512
+    n_experts_per_tok: int = 22
+    moe_intermediate_size: int = 5120
     n_shared_experts: int = 1
-    intermediate_size: int = 21504
+    intermediate_size: int = 5120
     norm_eps: float = 1e-5
     tie_embeddings: bool = False
 
@@ -55,9 +55,9 @@ class Config:
 PRESETS: dict[str, Config] = {
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=6, n_embd=128, n_head=4, n_kv_head=2,
-        head_dim=32, rope_theta=10000.0, attn_every=3, mamba_expand=2, mamba_d_state=8,
-        mamba_d_conv=4, mamba_dt_rank=16, use_moe=True, n_experts=8, n_experts_per_tok=2,
-        moe_intermediate_size=128, n_shared_experts=1, intermediate_size=256,
+        head_dim=32, rope_theta=10000.0, layer_pattern="ME*MEM", mamba_expand=2,
+        mamba_d_state=8, mamba_d_conv=4, mamba_dt_rank=16, use_moe=True, n_experts=8,
+        n_experts_per_tok=2, moe_intermediate_size=128, n_shared_experts=1, intermediate_size=256,
     ),
     "nemotron3-ultra": Config(),
 }
@@ -232,36 +232,63 @@ class MoE(nn.Module):
         return out.reshape(b, t, c)
 
 
-class Block(nn.Module):
-    """Hybrid block: Mamba-2 SSM or GQA attention (is_attn), always followed by MoE/dense FFN."""
+class MambaLayer(nn.Module):
+    """Standalone ``M`` layer from the NemotronH macro pattern: norm + Mamba residual."""
 
-    def __init__(self, cfg: Config, is_attn: bool):
+    layer_type = "M"
+
+    def __init__(self, cfg: Config):
         super().__init__()
-        self.is_attn = is_attn
-        self.mix_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
-        self.mix = Attention(cfg) if is_attn else Mamba(cfg)
-        self.ffn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
+        self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
+        self.mix = Mamba(cfg)
+
+    def forward(self, x, cos, sin, mask):
+        return x + self.mix(self.norm(x))
+
+
+class AttentionLayer(nn.Module):
+    """Standalone ``*`` layer from the NemotronH macro pattern: norm + GQA residual."""
+
+    layer_type = "*"
+    is_attn = True
+
+    def __init__(self, cfg: Config):
+        super().__init__()
+        self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
+        self.attn = Attention(cfg)
+
+    def forward(self, x, cos, sin, mask):
+        return x + self.attn(self.norm(x), cos, sin, mask)
+
+
+class FFNLayer(nn.Module):
+    """Standalone ``E`` layer from the NemotronH macro pattern: norm + MoE/dense residual."""
+
+    layer_type = "E"
+
+    def __init__(self, cfg: Config):
+        super().__init__()
+        self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.ffn = MoE(cfg) if cfg.use_moe else MLP(cfg.n_embd, cfg.intermediate_size)
 
     def forward(self, x, cos, sin, mask):
-        x = x + (self.mix(self.mix_norm(x), cos, sin, mask) if self.is_attn else self.mix(self.mix_norm(x)))
-        x = x + self.ffn(self.ffn_norm(x))
-        return x
+        return x + self.ffn(self.norm(x))
 
 
 # --------------------------------------------------------------------------------------------------
 # Model
 # --------------------------------------------------------------------------------------------------
 class Model(nn.Module):
-    """Full language model: embed tokens, run Mamba-2/attention hybrid blocks, project to logits."""
+    """Full language model: embed tokens, run the NemotronH M/E/* layer pattern, project to logits."""
 
     def __init__(self, cfg: Config):
         super().__init__()
         self.config = cfg
         self.tok_emb = nn.Embedding(cfg.vocab_size, cfg.n_embd)
-        self.blocks = nn.ModuleList(
-            Block(cfg, is_attn=((i + 1) % cfg.attn_every == 0)) for i in range(cfg.n_layer)
-        )
+        if len(cfg.layer_pattern) != cfg.n_layer:
+            raise ValueError("cfg.layer_pattern length must equal cfg.n_layer")
+        layer_types = {"M": MambaLayer, "E": FFNLayer, "*": AttentionLayer}
+        self.blocks = nn.ModuleList(layer_types[c](cfg) for c in cfg.layer_pattern)
         self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.lm_head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
         if cfg.tie_embeddings:
@@ -303,8 +330,10 @@ if __name__ == "__main__":
     logits = model(idx)
     loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), idx.reshape(-1))
     loss.backward()
-    n_attn = sum(b.is_attn for b in model.blocks)
+    n_mamba = sum(b.layer_type == "M" for b in model.blocks)
+    n_moe = sum(b.layer_type == "E" for b in model.blocks)
+    n_attn = sum(b.layer_type == "*" for b in model.blocks)
     print(f"{MODEL_NAME}  (tiny preset)")
-    print(f"  mixers : {cfg.n_layer - n_attn} Mamba + {n_attn} attention layers")
+    print(f"  layers : {n_mamba} Mamba + {n_moe} MoE/FFN + {n_attn} attention")
     print(f"  params : {sum(p.numel() for p in model.parameters()):,}")
     print(f"  logits : {tuple(logits.shape)}  loss {loss.item():.4f}  (~ln(vocab)={math.log(cfg.vocab_size):.4f})")

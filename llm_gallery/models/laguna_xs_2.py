@@ -1,7 +1,7 @@
 """Laguna XS.2 (33B)
 
-Laguna XS.2: MoE with gated GQA + sliding/global. ASSUMPTION: gating and sliding/global
-omitted; plain MoE + GQA. Config approximate.
+Laguna XS.2: MoE with gated GQA and a 1 full / 3 sliding-window schedule.
+Config approximate.
 
 Architecture : GQA · top-k sparse MoE · RoPE · SwiGLU · RMSNorm
 Reference    : qwen3_30b_a3b.py  ← read this first; all building blocks are annotated there
@@ -30,21 +30,28 @@ TECH_REPORT_URL = "https://poolside.ai/assets/laguna/laguna-m1-xs2-technical-rep
 
 @dataclass
 class Config:
-    vocab_size: int = 128256
-    context_length: int = 131072
+    vocab_size: int = 100352
+    context_length: int = 262144
     n_layer: int = 40
-    n_head: int = 32
+    n_head: int = 48
     n_kv_head: int = 8
-    n_embd: int = 4096
+    n_embd: int = 2048
     head_dim: int = 128
-    n_experts: int = 64
-    n_experts_per_tok: int = 6
-    moe_intermediate_size: int = 1024
+    n_experts: int = 256
+    n_experts_per_tok: int = 8
+    moe_intermediate_size: int = 512
+    intermediate_size: int = 512
     n_shared_experts: int = 0
     norm_topk_prob: bool = True
+    moe_every: int = 1
     qk_norm: bool = False
     rope_theta: float = 1000000.0
-    norm_eps: float = 1e-5
+    nope_every: int = 0
+    sliding_window: int = 512
+    global_every: int = 4
+    global_first: bool = True
+    attention_gate: bool = True
+    norm_eps: float = 1e-06
     tie_embeddings: bool = False
 
 
@@ -52,7 +59,10 @@ PRESETS: dict[str, Config] = {
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=4, n_head=4, n_kv_head=2, n_embd=128,
         head_dim=32, n_experts=8, n_experts_per_tok=2, moe_intermediate_size=128,
-        n_shared_experts=0, qk_norm=False, rope_theta=10000.0, tie_embeddings=False,
+        intermediate_size=256, n_shared_experts=0, moe_every=1,
+        qk_norm=False, rope_theta=10000.0, nope_every=0, sliding_window=16,
+        global_every=4, global_first=True, attention_gate=True,
+        tie_embeddings=False,
     ),
     "laguna-xs.2": Config(),
 }
@@ -104,8 +114,10 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 class Attention(nn.Module):
     """GQA with optional per-head QK-Norm (enabled by cfg.qk_norm); same for all MoE layers."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, use_rope: bool):
         super().__init__()
+        self.use_rope = use_rope
+        self.attention_gate = cfg.attention_gate
         self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
         self.n_rep = cfg.n_head // cfg.n_kv_head
         self.head_dim = cfg.head_dim
@@ -113,6 +125,10 @@ class Attention(nn.Module):
         self.k_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.v_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.o_proj = nn.Linear(self.n_head * self.head_dim, cfg.n_embd, bias=False)
+        self.g_proj = (
+            nn.Linear(cfg.n_embd, self.n_head * self.head_dim, bias=False)
+            if cfg.attention_gate else None
+        )
         self.q_norm = RMSNorm(self.head_dim, cfg.norm_eps) if cfg.qk_norm else None
         self.k_norm = RMSNorm(self.head_dim, cfg.norm_eps) if cfg.qk_norm else None
 
@@ -123,12 +139,15 @@ class Attention(nn.Module):
         v = self.v_proj(x).view(b, t, self.n_kv_head, self.head_dim).transpose(1, 2)
         if self.q_norm is not None:
             q, k = self.q_norm(q), self.k_norm(k)
-        q, k = apply_rope(q, k, cos, sin)
+        if self.use_rope:
+            q, k = apply_rope(q, k, cos, sin)
         k, v = repeat_kv(k, self.n_rep), repeat_kv(v, self.n_rep)
         att = (q @ k.transpose(-2, -1)) / math.sqrt(self.head_dim)
         att = att.masked_fill(mask[:t, :t], float("-inf"))
         att = F.softmax(att, dim=-1)
         y = (att @ v).transpose(1, 2).reshape(b, t, self.n_head * self.head_dim)
+        if self.g_proj is not None:
+            y = y * torch.sigmoid(self.g_proj(x))
         return self.o_proj(y)
 
 
@@ -140,6 +159,19 @@ class Expert(nn.Module):
         self.gate_proj = nn.Linear(cfg.n_embd, cfg.moe_intermediate_size, bias=False)
         self.up_proj = nn.Linear(cfg.n_embd, cfg.moe_intermediate_size, bias=False)
         self.down_proj = nn.Linear(cfg.moe_intermediate_size, cfg.n_embd, bias=False)
+
+    def forward(self, x):
+        return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
+
+
+class DenseMLP(nn.Module):
+    """Dense SwiGLU FFN used in interleaved MoE stacks such as Llama 4 Maverick."""
+
+    def __init__(self, cfg: Config):
+        super().__init__()
+        self.gate_proj = nn.Linear(cfg.n_embd, cfg.intermediate_size, bias=False)
+        self.up_proj = nn.Linear(cfg.n_embd, cfg.intermediate_size, bias=False)
+        self.down_proj = nn.Linear(cfg.intermediate_size, cfg.n_embd, bias=False)
 
     def forward(self, x):
         return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
@@ -190,18 +222,24 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
-    """Pre-norm block: GQA attention + sparse MoE feed-forward, both with residual connections."""
+    """Pre-norm block: GQA attention + MoE or dense feed-forward, both with residual connections."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, layer_idx: int):
         super().__init__()
+        self.is_moe = layer_idx % cfg.moe_every == 0
+        self.is_global = (
+            cfg.sliding_window <= 0
+            or (layer_idx % cfg.global_every == 0 if cfg.global_first else (layer_idx + 1) % cfg.global_every == 0)
+        )
+        use_rope = cfg.nope_every <= 0 or (layer_idx + 1) % cfg.nope_every != 0
         self.attn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
-        self.attn = Attention(cfg)
+        self.attn = Attention(cfg, use_rope)
         self.ffn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
-        self.moe = MoE(cfg)
+        self.ffn = MoE(cfg) if self.is_moe else DenseMLP(cfg)
 
     def forward(self, x, cos, sin, mask):
         x = x + self.attn(self.attn_norm(x), cos, sin, mask)
-        x = x + self.moe(self.ffn_norm(x))
+        x = x + self.ffn(self.ffn_norm(x))
         return x
 
 
@@ -215,7 +253,7 @@ class Model(nn.Module):
         super().__init__()
         self.config = cfg
         self.tok_emb = nn.Embedding(cfg.vocab_size, cfg.n_embd)
-        self.blocks = nn.ModuleList(Block(cfg) for _ in range(cfg.n_layer))
+        self.blocks = nn.ModuleList(Block(cfg, i) for i in range(cfg.n_layer))
         self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.lm_head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
         if cfg.tie_embeddings:
@@ -223,10 +261,15 @@ class Model(nn.Module):
         cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
+        n = cfg.context_length
+        ar = torch.arange(n)
+        future = ar[None, :] > ar[:, None]
+        if cfg.sliding_window > 0:
+            too_far = (ar[:, None] - ar[None, :]) >= cfg.sliding_window
+            self.register_buffer("mask_local", future | too_far, persistent=False)
+        else:
+            self.register_buffer("mask_local", future, persistent=False)
+        self.register_buffer("mask_global", future, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -238,7 +281,8 @@ class Model(nn.Module):
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            mask = self.mask_global if block.is_global else self.mask_local
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 

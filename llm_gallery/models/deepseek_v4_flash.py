@@ -1,7 +1,7 @@
 """DeepSeek V4-Flash (284B)
 
 DeepSeek V4-Flash: MLA + MoE with compressed sparse attention. Config approximate.
-ASSUMPTION: compressed-sparse-attention selection omitted; full MLA attention used.
+ASSUMPTION: compressed-sparse key selection is documented, but full MLA attention is used.
 
 Architecture : Multi-head Latent Attention (MLA) · fine-grained MoE · shared experts
 Reference    : deepseek_v3.py  ← read this first; all building blocks are annotated there
@@ -31,22 +31,22 @@ TECH_REPORT_URL = "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/blob/mai
 @dataclass
 class Config:
     vocab_size: int = 129280
-    context_length: int = 4096
-    n_layer: int = 48
-    n_embd: int = 5120
-    n_head: int = 96
-    q_lora_rank: int = 1536
+    context_length: int = 1048576
+    n_layer: int = 43
+    n_embd: int = 4096
+    n_head: int = 64
+    q_lora_rank: int = 1024
     kv_lora_rank: int = 512
     qk_nope_head_dim: int = 128
     qk_rope_head_dim: int = 64
     v_head_dim: int = 128
     n_experts: int = 256
-    n_experts_per_tok: int = 8
+    n_experts_per_tok: int = 6
     n_shared_experts: int = 1
     moe_intermediate_size: int = 2048
     dense_intermediate_size: int = 12288
     first_k_dense: int = 2
-    routed_scaling_factor: float = 2.5
+    routed_scaling_factor: float = 1.5
     rope_theta: float = 10000.0
     norm_eps: float = 1e-6
     tie_embeddings: bool = False

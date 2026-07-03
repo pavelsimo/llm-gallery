@@ -30,15 +30,15 @@ TECH_REPORT_URL = ""
 
 @dataclass
 class Config:
-    vocab_size: int = 49152
+    vocab_size: int = 100352
     context_length: int = 131072
-    n_layer: int = 40
+    n_layer: int = 64
     n_head: int = 32
     n_kv_head: int = 8
     n_embd: int = 4096
     head_dim: int = 128
-    intermediate_size: int = 12800
-    rope_theta: float = 1000000.0
+    intermediate_size: int = 32768
+    rope_theta: float = 50000000
     norm_eps: float = 1e-5
     tie_embeddings: bool = True
 

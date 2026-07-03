@@ -30,7 +30,7 @@ TECH_REPORT_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 @dataclass
 class Config:
     vocab_size: int = 131072
-    context_length: int = 4096
+    context_length: int = 262144
     n_layer: int = 61
     n_embd: int = 7168
     n_head: int = 96

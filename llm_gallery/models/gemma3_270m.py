@@ -31,7 +31,7 @@ TECH_REPORT_URL = "https://arxiv.org/pdf/2503.19786"
 @dataclass
 class Config:
     vocab_size: int = 262144
-    context_length: int = 32768
+    context_length: int = 128000
     n_layer: int = 18
     n_head: int = 4
     n_kv_head: int = 1

@@ -11,6 +11,8 @@ A fully-open dense model whose two notable departures from the Llama recipe are 
          x = x + norm(ffn(x))
 
 OLMo 2 7B keeps full multi-head attention (no GQA), RoPE, and a SwiGLU MLP.
+The same body also supports OLMo 3's 3-sliding/1-full attention schedule through config fields;
+OLMo 2 leaves that schedule disabled.
 
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (OLMo 2)
 Tech report: https://arxiv.org/pdf/2501.00656
@@ -47,6 +49,8 @@ class Config:
     n_embd: int = 4096
     intermediate_size: int = 11008
     rope_theta: float = 500000.0
+    sliding_window: int = 0  # 0 = full causal attention in every layer
+    global_every: int = 1  # with sliding_window > 0, every Nth layer is full/global
     norm_eps: float = 1e-6
 
 
@@ -156,8 +160,9 @@ class SwiGLU(nn.Module):
 class Block(nn.Module):
     """Post-norm block: the norm is applied to the sublayer *output*, not its input."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, layer_idx: int):
         super().__init__()
+        self.is_global = cfg.sliding_window <= 0 or (layer_idx + 1) % cfg.global_every == 0
         self.attn = Attention(cfg)
         self.attn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.ffn = SwiGLU(cfg)
@@ -179,7 +184,7 @@ class Model(nn.Module):
         super().__init__()
         self.config = cfg
         self.tok_emb = nn.Embedding(cfg.vocab_size, cfg.n_embd)
-        self.blocks = nn.ModuleList(Block(cfg) for _ in range(cfg.n_layer))
+        self.blocks = nn.ModuleList(Block(cfg, i) for i in range(cfg.n_layer))
         self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.lm_head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
 
@@ -187,10 +192,15 @@ class Model(nn.Module):
         cos, sin = precompute_rope(head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
+        n = cfg.context_length
+        ar = torch.arange(n)
+        future = ar[None, :] > ar[:, None]
+        if cfg.sliding_window > 0:
+            too_far = (ar[:, None] - ar[None, :]) >= cfg.sliding_window
+            self.register_buffer("mask_local", future | too_far, persistent=False)
+        else:
+            self.register_buffer("mask_local", future, persistent=False)
+        self.register_buffer("mask_global", future, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -202,7 +212,8 @@ class Model(nn.Module):
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            mask = self.mask_global if block.is_global else self.mask_local
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 

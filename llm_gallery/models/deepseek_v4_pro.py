@@ -1,7 +1,7 @@
 """DeepSeek V4-Pro (1.6T)
 
 DeepSeek V4-Pro: largest DeepSeek MoE with compressed sparse attention and mHC.
-Config approximate. ASSUMPTION: sparse attention + mHC omitted; full MLA attention used.
+Config approximate. ASSUMPTION: sparse key selection and mHC are documented, but full MLA attention is used.
 
 Architecture : Multi-head Latent Attention (MLA) · fine-grained MoE · shared experts
 Reference    : deepseek_v3.py  ← read this first; all building blocks are annotated there
@@ -31,7 +31,7 @@ TECH_REPORT_URL = "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/
 @dataclass
 class Config:
     vocab_size: int = 129280
-    context_length: int = 4096
+    context_length: int = 1048576
     n_layer: int = 61
     n_embd: int = 7168
     n_head: int = 128
@@ -41,9 +41,9 @@ class Config:
     qk_rope_head_dim: int = 64
     v_head_dim: int = 128
     n_experts: int = 384
-    n_experts_per_tok: int = 8
+    n_experts_per_tok: int = 6
     n_shared_experts: int = 1
-    moe_intermediate_size: int = 2048
+    moe_intermediate_size: int = 3072
     dense_intermediate_size: int = 18432
     first_k_dense: int = 3
     routed_scaling_factor: float = 2.5

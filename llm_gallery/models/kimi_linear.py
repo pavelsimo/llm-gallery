@@ -10,10 +10,12 @@ O(1) memory instead of O(T²):
 A few layers keep ordinary full attention so the model retains exact long-range lookups; the
 feed-forward is a sparse MoE. The recurrence is written sequentially for clarity.
 
-ASSUMPTION / simplification: the real Kimi Linear uses MLA for its full-attention layers (see
-`deepseek_v3.py` for MLA) and a more elaborate gated "Kimi Delta Attention"; here the full-attention
-layers are plain GQA and the linear mixer is vanilla linear attention. The headline idea — O(T) linear
-attention interleaved with full attention — is faithful.
+ASSUMPTION: the real Kimi Linear uses MLA for its full-attention layers (see `deepseek_v3.py` for
+MLA) and a more elaborate gated "Kimi Delta Attention"; here the full-attention layers are plain GQA
+and the linear mixer is vanilla linear attention. The real preset still keeps the published outer
+dimensions (27 layers, 2304 hidden size, 256 routed experts, top-8, 1024-wide experts, 1M-token
+context, theta=10000); only the internal MLA/KDA mechanics are simplified. The headline idea, O(T)
+linear attention interleaved with full attention, is faithful.
 
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Kimi Linear)
 Tech report: https://arxiv.org/pdf/2510.26692
@@ -42,20 +44,20 @@ TECH_REPORT_URL = "https://arxiv.org/pdf/2510.26692"
 @dataclass
 class Config:
     vocab_size: int = 163840
-    context_length: int = 40960
-    n_layer: int = 48
-    n_embd: int = 2048
-    linear_n_head: int = 16
-    n_head: int = 16
-    n_kv_head: int = 2
-    head_dim: int = 128
-    rope_theta: float = 1_000_000.0
+    context_length: int = 1_000_000
+    n_layer: int = 27
+    n_embd: int = 2304
+    linear_n_head: int = 32
+    n_head: int = 32
+    n_kv_head: int = 32
+    head_dim: int = 72
+    rope_theta: float = 10_000.0
     attn_every: int = 4  # every Nth layer (1-indexed) is full attention; rest are linear attention
     n_experts: int = 256
     n_experts_per_tok: int = 8
-    moe_intermediate_size: int = 512
+    moe_intermediate_size: int = 1024
     n_shared_experts: int = 1
-    norm_eps: float = 1e-6
+    norm_eps: float = 1e-5
     tie_embeddings: bool = False
 
 

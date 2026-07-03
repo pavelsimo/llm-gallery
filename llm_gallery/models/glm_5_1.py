@@ -1,6 +1,7 @@
 """GLM-5.1 (744B)
 
 GLM-5.1: iteration on GLM-5 (MLA + MoE). Config approximate.
+ASSUMPTION: sparse key selection / index sharing is documented, but full MLA attention is used.
 
 Architecture : Multi-head Latent Attention (MLA) · fine-grained MoE · shared experts
 Reference    : deepseek_v3.py  ← read this first; all building blocks are annotated there
@@ -29,20 +30,20 @@ TECH_REPORT_URL = ""
 
 @dataclass
 class Config:
-    vocab_size: int = 151552
-    context_length: int = 4096
-    n_layer: int = 92
-    n_embd: int = 5120
-    n_head: int = 96
-    q_lora_rank: int = 1536
+    vocab_size: int = 154880
+    context_length: int = 202752
+    n_layer: int = 78
+    n_embd: int = 6144
+    n_head: int = 64
+    q_lora_rank: int = 2048
     kv_lora_rank: int = 512
-    qk_nope_head_dim: int = 128
+    qk_nope_head_dim: int = 192
     qk_rope_head_dim: int = 64
-    v_head_dim: int = 128
-    n_experts: int = 160
+    v_head_dim: int = 256
+    n_experts: int = 256
     n_experts_per_tok: int = 8
     n_shared_experts: int = 1
-    moe_intermediate_size: int = 1536
+    moe_intermediate_size: int = 2048
     dense_intermediate_size: int = 12288
     first_k_dense: int = 3
     routed_scaling_factor: float = 2.5

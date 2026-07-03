@@ -14,7 +14,13 @@
         <p class="eyebrow">llm-gallery</p>
         <h1>Interactive model-code visualizer</h1>
       </div>
-      <a class="header-link" href="../README.md">README</a>
+      <div class="header-actions">
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode" title="Toggle dark mode">
+          Theme
+        </button>
+        <a class="header-link" href="compare.html">Compare</a>
+        <a class="header-link" href="https://github.com/pavelsimo/llm-gallery#readme">README</a>
+      </div>
     </header>
 
     <main class="index-shell">
@@ -41,6 +47,7 @@
       </section>
 
       <div class="result-meta" id="resultMeta"></div>
+      <section class="learning-rail" id="learningRail" aria-label="Learning path"></section>
       <section class="model-grid" id="modelGrid" aria-live="polite"></section>
     </main>
   </body>

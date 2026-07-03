@@ -40,9 +40,9 @@ class Config:
     n_kv_head: int = 4
     n_embd: int = 2048
     intermediate_size: int = 11008
-    rope_theta: float = 2_000_000.0
+    rope_theta: float = 5_000_000.0
     nope_every: int = 4  # every Nth layer (1-indexed) uses NO positional encoding
-    norm_eps: float = 1e-5
+    norm_eps: float = 1e-6
     tie_embeddings: bool = True
 
 

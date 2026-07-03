@@ -31,7 +31,7 @@ TECH_REPORT_URL = "https://developers.googleblog.com/gemma-4-12b-the-developer-g
 @dataclass
 class Config:
     vocab_size: int = 262144
-    context_length: int = 131072
+    context_length: int = 262144
     n_layer: int = 48
     n_head: int = 16
     n_kv_head: int = 8

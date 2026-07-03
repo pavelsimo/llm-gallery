@@ -1,6 +1,7 @@
 """LFM2.5 (350M)
 
-LFM2.5 350M: modeled as a dense GQA transformer (see note in lfm2.5-1.2b).
+LFM2.5 350M: modeled as a dense GQA transformer.
+NOTE: Liquid LFM2 actually uses short-conv + attention; this is a dense approximation.
 
 Architecture : RoPE · GQA · SwiGLU · RMSNorm (pre-norm dense)
 Reference    : llama3_8b.py  ← read this first; all building blocks are annotated there
@@ -30,13 +31,13 @@ TECH_REPORT_URL = ""
 @dataclass
 class Config:
     vocab_size: int = 65536
-    context_length: int = 32768
-    n_layer: int = 12
-    n_head: int = 8
-    n_kv_head: int = 4
+    context_length: int = 128000
+    n_layer: int = 16
+    n_head: int = 16
+    n_kv_head: int = 8
     n_embd: int = 1024
     head_dim: int = 128
-    intermediate_size: int = 4096
+    intermediate_size: int = 6656
     rope_theta: float = 1000000.0
     norm_eps: float = 1e-5
     tie_embeddings: bool = True

@@ -15,9 +15,12 @@ How the MoE layer works (see `MoE.forward`):
   2. softmax -> pick the **top-k** experts, renormalize their weights to sum to 1,
   3. run those k experts (each a SwiGLU MLP) and sum their outputs, weighted by the router probs.
 
-This file also carries two flags used by other MoE models in the gallery (so it can be the shared
-base for them): ``qk_norm`` (Grok/Llama-4 turn it off) and ``n_shared_experts`` (DeepSeek/Llama-4 add
-always-on experts). Qwen3 itself uses qk_norm=True and no shared experts.
+This file also carries flags used by other MoE models in the gallery (so it can be the shared base
+for them): ``qk_norm`` (Grok/Llama-4 turn it off), ``n_shared_experts`` (DeepSeek/Llama-4 add
+always-on experts), ``moe_every`` (Llama-4 alternates dense and MoE FFNs), ``nope_every``
+(interleaved NoPE/iRoPE-style schedules), ``sliding_window``/``global_every`` (local/global attention
+schedules), and ``attention_gate`` (gated attention output). Qwen3 itself uses qk_norm=True and leaves
+the optional mechanisms disabled.
 
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Qwen3 30B-A3B)
 Tech report: https://arxiv.org/pdf/2505.09388
@@ -56,11 +59,18 @@ class Config:
     n_experts: int = 128
     n_experts_per_tok: int = 8  # top-k
     moe_intermediate_size: int = 768  # hidden size of EACH expert (small, since there are many)
+    intermediate_size: int = 6144  # used by dense FFN layers when moe_every > 1
     n_shared_experts: int = 0  # always-on experts applied to every token (Qwen3: none)
     norm_topk_prob: bool = True  # renormalize the top-k router weights to sum to 1
+    moe_every: int = 1  # 1 = every layer is MoE; 2 = alternate MoE/dense FFNs
     # attention / norm
     qk_norm: bool = True
     rope_theta: float = 1_000_000.0
+    nope_every: int = 0  # 0 = every layer uses RoPE; N = every Nth layer is NoPE
+    sliding_window: int = 0  # 0 = full causal attention in every layer
+    global_every: int = 1  # with sliding_window > 0, every Nth layer is global/full
+    global_first: bool = False  # True -> layers 1, 1+N, ... are global
+    attention_gate: bool = False  # optional learned gate on the attention output
     norm_eps: float = 1e-6
     tie_embeddings: bool = False
 
@@ -68,7 +78,8 @@ class Config:
 PRESETS: dict[str, Config] = {
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=4, n_head=4, n_kv_head=2, n_embd=128,
-        head_dim=32, n_experts=8, n_experts_per_tok=2, moe_intermediate_size=128, rope_theta=10000.0,
+        head_dim=32, n_experts=8, n_experts_per_tok=2, moe_intermediate_size=128,
+        intermediate_size=256, rope_theta=10000.0,
     ),
     "qwen3-30b-a3b": Config(),
 }
@@ -120,8 +131,10 @@ def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
 class Attention(nn.Module):
     """GQA with optional per-head QK-Norm (enabled by cfg.qk_norm); same for all MoE layers."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, use_rope: bool):
         super().__init__()
+        self.use_rope = use_rope
+        self.attention_gate = cfg.attention_gate
         self.n_head, self.n_kv_head = cfg.n_head, cfg.n_kv_head
         self.n_rep = cfg.n_head // cfg.n_kv_head
         self.head_dim = cfg.head_dim
@@ -129,6 +142,10 @@ class Attention(nn.Module):
         self.k_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.v_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.o_proj = nn.Linear(self.n_head * self.head_dim, cfg.n_embd, bias=False)
+        self.g_proj = (
+            nn.Linear(cfg.n_embd, self.n_head * self.head_dim, bias=False)
+            if cfg.attention_gate else None
+        )
         self.q_norm = RMSNorm(self.head_dim, cfg.norm_eps) if cfg.qk_norm else None
         self.k_norm = RMSNorm(self.head_dim, cfg.norm_eps) if cfg.qk_norm else None
 
@@ -139,12 +156,15 @@ class Attention(nn.Module):
         v = self.v_proj(x).view(b, t, self.n_kv_head, self.head_dim).transpose(1, 2)
         if self.q_norm is not None:
             q, k = self.q_norm(q), self.k_norm(k)
-        q, k = apply_rope(q, k, cos, sin)
+        if self.use_rope:
+            q, k = apply_rope(q, k, cos, sin)
         k, v = repeat_kv(k, self.n_rep), repeat_kv(v, self.n_rep)
         att = (q @ k.transpose(-2, -1)) / math.sqrt(self.head_dim)
         att = att.masked_fill(mask[:t, :t], float("-inf"))
         att = F.softmax(att, dim=-1)
         y = (att @ v).transpose(1, 2).reshape(b, t, self.n_head * self.head_dim)
+        if self.g_proj is not None:
+            y = y * torch.sigmoid(self.g_proj(x))
         return self.o_proj(y)
 
 
@@ -156,6 +176,19 @@ class Expert(nn.Module):
         self.gate_proj = nn.Linear(cfg.n_embd, cfg.moe_intermediate_size, bias=False)
         self.up_proj = nn.Linear(cfg.n_embd, cfg.moe_intermediate_size, bias=False)
         self.down_proj = nn.Linear(cfg.moe_intermediate_size, cfg.n_embd, bias=False)
+
+    def forward(self, x):
+        return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
+
+
+class DenseMLP(nn.Module):
+    """Dense SwiGLU FFN used in interleaved MoE stacks such as Llama 4 Maverick."""
+
+    def __init__(self, cfg: Config):
+        super().__init__()
+        self.gate_proj = nn.Linear(cfg.n_embd, cfg.intermediate_size, bias=False)
+        self.up_proj = nn.Linear(cfg.n_embd, cfg.intermediate_size, bias=False)
+        self.down_proj = nn.Linear(cfg.intermediate_size, cfg.n_embd, bias=False)
 
     def forward(self, x):
         return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
@@ -206,18 +239,24 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
-    """Pre-norm block: GQA attention + sparse MoE feed-forward, both with residual connections."""
+    """Pre-norm block: GQA attention + MoE or dense feed-forward, both with residual connections."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, layer_idx: int):
         super().__init__()
+        self.is_moe = layer_idx % cfg.moe_every == 0
+        self.is_global = (
+            cfg.sliding_window <= 0
+            or (layer_idx % cfg.global_every == 0 if cfg.global_first else (layer_idx + 1) % cfg.global_every == 0)
+        )
+        use_rope = cfg.nope_every <= 0 or (layer_idx + 1) % cfg.nope_every != 0
         self.attn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
-        self.attn = Attention(cfg)
+        self.attn = Attention(cfg, use_rope)
         self.ffn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
-        self.moe = MoE(cfg)
+        self.ffn = MoE(cfg) if self.is_moe else DenseMLP(cfg)
 
     def forward(self, x, cos, sin, mask):
         x = x + self.attn(self.attn_norm(x), cos, sin, mask)
-        x = x + self.moe(self.ffn_norm(x))
+        x = x + self.ffn(self.ffn_norm(x))
         return x
 
 
@@ -231,7 +270,7 @@ class Model(nn.Module):
         super().__init__()
         self.config = cfg
         self.tok_emb = nn.Embedding(cfg.vocab_size, cfg.n_embd)
-        self.blocks = nn.ModuleList(Block(cfg) for _ in range(cfg.n_layer))
+        self.blocks = nn.ModuleList(Block(cfg, i) for i in range(cfg.n_layer))
         self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.lm_head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
         if cfg.tie_embeddings:
@@ -239,10 +278,15 @@ class Model(nn.Module):
         cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
+        n = cfg.context_length
+        ar = torch.arange(n)
+        future = ar[None, :] > ar[:, None]
+        if cfg.sliding_window > 0:
+            too_far = (ar[:, None] - ar[None, :]) >= cfg.sliding_window
+            self.register_buffer("mask_local", future | too_far, persistent=False)
+        else:
+            self.register_buffer("mask_local", future, persistent=False)
+        self.register_buffer("mask_global", future, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -254,7 +298,8 @@ class Model(nn.Module):
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            mask = self.mask_global if block.is_global else self.mask_local
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 

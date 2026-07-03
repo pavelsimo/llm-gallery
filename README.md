@@ -66,7 +66,9 @@ Python section and clicking code highlights the matching diagram node.
 Developed against a GTX 1060 6GB (Pascal). There's **no hardware bf16** on Pascal, so the code defaults to
 **fp32** and the runnable `tiny` presets are sized to train on CPU or a small GPU in minutes. The `real`
 presets in each file encode the *published* dimensions for reference; they are documentation, not meant to be
-instantiated full-size on modest hardware.
+instantiated full-size on modest hardware. For `real.context_length`, the convention is: use the public
+HuggingFace `config.json` `max_position_embeddings` when available; otherwise use the gallery card's context
+length. This may differ from the short `tiny` preset context and from rounded labels like "128K".
 
 ## Layout
 
