@@ -112,6 +112,23 @@
     },
     {
       "h": 96,
+      "id": "moe-mo-e",
+      "label": "MoE",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 793,
+      "y": 920
+    },
+    {
+      "h": 96,
       "id": "block-norm-2-norm-2",
       "label": "Norm 2",
       "role": "norm",
@@ -127,6 +144,24 @@
       "w": 362,
       "x": 793,
       "y": 1096
+    },
+    {
+      "h": 92,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 92,
+      "x": 2115,
+      "y": 1385
     },
     {
       "h": 104,

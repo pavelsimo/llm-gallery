@@ -74,6 +74,24 @@
       "y": 823
     },
     {
+      "h": 110,
+      "id": "attention-output-projection-sigmoid-gate",
+      "label": "Sigmoid gate",
+      "role": "attention",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "output_projection",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 110,
+      "x": 3936,
+      "y": 840
+    },
+    {
       "h": 137,
       "id": "block-norm-1-r-r-m-s-norm",
       "label": "RRRMSNorm",
@@ -358,6 +376,23 @@
       "y": 2534
     },
     {
+      "h": 110,
+      "id": "attention-si-l-u-gate-delta-net",
+      "label": "SiLU gate (DeltaNet)",
+      "role": "attention",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 110,
+      "x": 3937,
+      "y": 2613
+    },
+    {
       "h": 137,
       "id": "block-norm-1-l-z-norm",
       "label": "LZNorm",
@@ -374,6 +409,74 @@
       "w": 246,
       "x": 3048,
       "y": 2757
+    },
+    {
+      "h": 110,
+      "id": "attention-gate-activation-delta-net-2",
+      "label": "Gate activation (DeltaNet)",
+      "role": "attention",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 110,
+      "x": 3369,
+      "y": 2907
+    },
+    {
+      "h": 110,
+      "id": "attention-gate-activation-delta-net",
+      "label": "Gate activation (DeltaNet)",
+      "role": "attention",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 110,
+      "x": 3125,
+      "y": 2941
+    },
+    {
+      "h": 136,
+      "id": "attention-conv-delta-net",
+      "label": "Conv (DeltaNet)",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 246,
+      "x": 3291,
+      "y": 3046
+    },
+    {
+      "h": 136,
+      "id": "attention-conv-delta-net-2",
+      "label": "Conv (DeltaNet)",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 245,
+      "x": 3036,
+      "y": 3080
     },
     {
       "h": 145,
@@ -410,6 +513,23 @@
       "w": 245,
       "x": 3873,
       "y": 3249
+    },
+    {
+      "h": 137,
+      "id": "attention-linear-projections-delta-net",
+      "label": "Linear projections (DeltaNet)",
+      "role": "attention",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 182,
+      "x": 3574,
+      "y": 3251
     },
     {
       "h": 136,

@@ -128,6 +128,59 @@
       "y": 817
     },
     {
+      "h": 76,
+      "id": "block-residual-mlp-mh-c-mixer-2",
+      "label": "mhC mixer",
+      "role": "block",
+      "rx": 13,
+      "ry": 13,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "residual_mlp",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 974,
+      "y": 841
+    },
+    {
+      "h": 96,
+      "id": "moe-mo-e",
+      "label": "MoE",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "DeepseekMoE",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 950,
+      "y": 969
+    },
+    {
+      "h": 77,
+      "id": "block-residual-mlp-mh-c-mixer",
+      "label": "mhC mixer",
+      "role": "block",
+      "rx": 13,
+      "ry": 13,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "residual_mlp",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 971,
+      "y": 1114
+    },
+    {
       "h": 96,
       "id": "block-norm-2-norm-2",
       "label": "Norm 2",
@@ -144,6 +197,42 @@
       "w": 363,
       "x": 950,
       "y": 1240
+    },
+    {
+      "h": 92,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "DeepseekMoE",
+        "type": "anchor"
+      },
+      "w": 92,
+      "x": 2270,
+      "y": 1393
+    },
+    {
+      "h": 77,
+      "id": "block-residual-attn-mh-c-mixer",
+      "label": "mhC mixer",
+      "role": "block",
+      "rx": 13,
+      "ry": 13,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "residual_attn",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 968,
+      "y": 1488
     },
     {
       "h": 310,
@@ -178,6 +267,42 @@
       "w": 362,
       "x": 1877,
       "y": 1627
+    },
+    {
+      "h": 104,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "rope",
+        "section_label": "MLA",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 504,
+      "y": 1721
+    },
+    {
+      "h": 77,
+      "id": "block-residual-attn-mh-c-mixer-2",
+      "label": "mhC mixer",
+      "role": "block",
+      "rx": 13,
+      "ry": 13,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "residual_attn",
+        "section_label": "Block",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 976,
+      "y": 1966
     },
     {
       "h": 96,
@@ -231,6 +356,57 @@
       "w": 363,
       "x": 948,
       "y": 2446
+    },
+    {
+      "h": 242,
+      "id": "block-sublayer-attention-or-mo-e",
+      "label": "Sublayer (attention or MoE)",
+      "role": "block",
+      "rx": 43,
+      "ry": 43,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Block",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 2384,
+      "y": 2469
+    },
+    {
+      "h": 244,
+      "id": "block-mh-c-mixer-constrained-mixing",
+      "label": "mhC mixer (constrained mixing)",
+      "role": "block",
+      "rx": 43,
+      "ry": 43,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Block",
+        "type": "section"
+      },
+      "w": 263,
+      "x": 2022,
+      "y": 2470
+    },
+    {
+      "h": 243,
+      "id": "block-mh-c-mixer-constrained-mixing-2",
+      "label": "mhC mixer (constrained mixing)",
+      "role": "block",
+      "rx": 43,
+      "ry": 43,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Block",
+        "type": "section"
+      },
+      "w": 263,
+      "x": 2844,
+      "y": 2473
     }
   ],
   "image_sha256": "f6d2504c4531b5db8b47b1855fb1354b2566b041b0eb34e1a680f4d6afd44f6b",

@@ -93,6 +93,23 @@
     },
     {
       "h": 98,
+      "id": "mixer-conv1-d",
+      "label": "Conv1D",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Mamba",
+        "type": "section"
+      },
+      "w": 170,
+      "x": 2204,
+      "y": 788
+    },
+    {
+      "h": 98,
       "id": "model-final-norm-final-norm",
       "label": "Final norm",
       "role": "norm",
@@ -161,6 +178,42 @@
       "w": 325,
       "x": 1610,
       "y": 1318
+    },
+    {
+      "h": 162,
+      "id": "attention-kv-share-k-v-head-g-q-a",
+      "label": "K/V head (GQA)",
+      "role": "attention",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "kv_share",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 111,
+      "x": 2301,
+      "y": 1626
+    },
+    {
+      "h": 161,
+      "id": "attention-kv-share-k-v-head-g-q-a-2",
+      "label": "K/V head (GQA)",
+      "role": "attention",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "kv_share",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 111,
+      "x": 2790,
+      "y": 1628
     },
     {
       "h": 240,
@@ -303,6 +356,24 @@
       "w": 365,
       "x": 408,
       "y": 2762
+    },
+    {
+      "h": 92,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 91,
+      "x": 2557,
+      "y": 2837
     },
     {
       "h": 96,

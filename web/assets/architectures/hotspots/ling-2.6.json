@@ -3,6 +3,24 @@
   "coordinate_space": "artwork",
   "hotspots": [
     {
+      "h": 99,
+      "id": "model-lm-head-m-t-p-layer",
+      "label": "MTP layer",
+      "role": "model",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "lm_head",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 387,
+      "x": 712,
+      "y": 268
+    },
+    {
       "h": 98,
       "id": "model-lm-head-linear-output-layer",
       "label": "Linear output layer",

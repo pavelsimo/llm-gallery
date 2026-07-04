@@ -146,6 +146,42 @@
       "y": 1082
     },
     {
+      "h": 91,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 91,
+      "x": 2221,
+      "y": 1371
+    },
+    {
+      "h": 103,
+      "id": "attention-qk-norm-q-k-norm",
+      "label": "QK-Norm",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qk_norm",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 477,
+      "y": 1394
+    },
+    {
       "h": 169,
       "id": "attention-grouped-query-attention",
       "label": "Grouped-query Attention",
@@ -161,6 +197,24 @@
       "w": 445,
       "x": 855,
       "y": 1436
+    },
+    {
+      "h": 104,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 473,
+      "y": 1507
     },
     {
       "h": 96,

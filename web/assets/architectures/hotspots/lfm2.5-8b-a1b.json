@@ -39,6 +39,24 @@
       "y": 571
     },
     {
+      "h": 91,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 91,
+      "x": 1882,
+      "y": 702
+    },
+    {
       "h": 96,
       "id": "expert-feed-forward",
       "label": "Feed forward",
@@ -71,6 +89,42 @@
       "w": 514,
       "x": 451,
       "y": 1893
+    },
+    {
+      "h": 134,
+      "id": "attention-kv-share-k-v-head-g-q-a-2",
+      "label": "K/V head (GQA)",
+      "role": "attention",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "kv_share",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 94,
+      "x": 1654,
+      "y": 2122
+    },
+    {
+      "h": 134,
+      "id": "attention-kv-share-k-v-head-g-q-a",
+      "label": "K/V head (GQA)",
+      "role": "attention",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "kv_share",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 94,
+      "x": 1885,
+      "y": 2122
     },
     {
       "h": 104,

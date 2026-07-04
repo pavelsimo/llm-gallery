@@ -146,6 +146,24 @@
       "y": 1094
     },
     {
+      "h": 91,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 91,
+      "x": 2270,
+      "y": 1383
+    },
+    {
       "h": 269,
       "id": "attention-grouped-query-attention-g-q-a-sliding-window-attention-s-w-a-3-1",
       "label": "Grouped Query \" Attention (GQA) + - Sliding window attention | (SWA), 3:1",
@@ -161,6 +179,42 @@
       "w": 466,
       "x": 890,
       "y": 1405
+    },
+    {
+      "h": 103,
+      "id": "attention-qk-norm-q-k-norm",
+      "label": "QK-Norm",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qk_norm",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 526,
+      "y": 1406
+    },
+    {
+      "h": 104,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 521,
+      "y": 1519
     },
     {
       "h": 95,

@@ -128,6 +128,60 @@
       "y": 1082
     },
     {
+      "h": 272,
+      "id": "model-block-stack-layer-schedule",
+      "label": "Layer schedule",
+      "role": "model",
+      "rx": 48,
+      "ry": 48,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "block_stack",
+        "section_label": "Model",
+        "type": "anchor"
+      },
+      "w": 511,
+      "x": 613,
+      "y": 1642
+    },
+    {
+      "h": 134,
+      "id": "attention-kv-share-k-v-head-g-q-a-2",
+      "label": "K/V head (GQA)",
+      "role": "attention",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "kv_share",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 94,
+      "x": 1791,
+      "y": 2122
+    },
+    {
+      "h": 134,
+      "id": "attention-kv-share-k-v-head-g-q-a",
+      "label": "K/V head (GQA)",
+      "role": "attention",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "kv_share",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 94,
+      "x": 2022,
+      "y": 2122
+    },
+    {
       "h": 104,
       "id": "model-embedding-token-embedding",
       "label": "Token embedding",

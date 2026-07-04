@@ -164,6 +164,24 @@
       "y": 1468
     },
     {
+      "h": 103,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 343,
+      "y": 1493
+    },
+    {
       "h": 101,
       "id": "model-embedding-token-embedding",
       "label": "Token embedding",

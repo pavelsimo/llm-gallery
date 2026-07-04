@@ -111,6 +111,59 @@
       "y": 833
     },
     {
+      "h": 91,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 92,
+      "x": 2133,
+      "y": 1409
+    },
+    {
+      "h": 168,
+      "id": "attention-5-1-local-global-sliding-window-g-q-a",
+      "label": "5:1 local:global sliding window + GQA",
+      "role": "attention",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 441,
+      "x": 771,
+      "y": 1560
+    },
+    {
+      "h": 104,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 383,
+      "y": 1586
+    },
+    {
       "h": 95,
       "id": "expert-feed-forward",
       "label": "Feed forward",

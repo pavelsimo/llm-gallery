@@ -112,6 +112,23 @@
     },
     {
       "h": 96,
+      "id": "moe-mo-e",
+      "label": "MoE",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 362,
+      "x": 843,
+      "y": 1010
+    },
+    {
+      "h": 96,
       "id": "block-norm-2-norm-2",
       "label": "Norm 2",
       "role": "norm",
@@ -129,6 +146,24 @@
       "y": 1186
     },
     {
+      "h": 91,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 91,
+      "x": 2163,
+      "y": 1477
+    },
+    {
       "h": 270,
       "id": "attention-grouped-query-attention-7-sliding-window-attention-r-in-5-1-ratio",
       "label": "Grouped Query Attention (7 \") + Sliding window attention (:r ) in 5:1 ratio",
@@ -144,6 +179,24 @@
       "w": 467,
       "x": 771,
       "y": 1500
+    },
+    {
+      "h": 103,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 397,
+      "y": 1572
     },
     {
       "h": 96,

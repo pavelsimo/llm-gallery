@@ -4,6 +4,23 @@
   "hotspots": [
     {
       "h": 99,
+      "id": "attention-multi-head-latent-attention",
+      "label": "Multi-head latent attention",
+      "role": "attention",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 566,
+      "x": 1978,
+      "y": 362
+    },
+    {
+      "h": 99,
       "id": "model-lm-head-linear-output-layer",
       "label": "Linear output layer",
       "role": "output",
@@ -109,6 +126,24 @@
       "w": 170,
       "x": 2174,
       "y": 594
+    },
+    {
+      "h": 98,
+      "id": "attention-kv-share-latent-k-v-cache",
+      "label": "Latent KV cache",
+      "role": "attention",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "kv_share",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 185,
+      "x": 2162,
+      "y": 712
     },
     {
       "h": 98,
@@ -305,6 +340,42 @@
       "w": 171,
       "x": 2029,
       "y": 1769
+    },
+    {
+      "h": 98,
+      "id": "mixer-qkv-conv-k-d-a-2",
+      "label": "Conv (KDA)",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qkv",
+        "section_label": "LinearAttention",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2192,
+      "y": 1961
+    },
+    {
+      "h": 98,
+      "id": "mixer-qkv-conv-k-d-a",
+      "label": "Conv (KDA)",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qkv",
+        "section_label": "LinearAttention",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2021,
+      "y": 1984
     },
     {
       "h": 98,

@@ -164,6 +164,24 @@
     },
     {
       "h": 103,
+      "id": "attention-rope-no-p-e",
+      "label": "NoPE",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 25,
+      "y": 1423
+    },
+    {
+      "h": 103,
       "id": "attention-rope-ro-p-e",
       "label": "RoPE",
       "role": "position",

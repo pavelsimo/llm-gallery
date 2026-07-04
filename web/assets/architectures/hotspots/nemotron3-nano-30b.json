@@ -56,6 +56,23 @@
       "y": 570
     },
     {
+      "h": 97,
+      "id": "mixer-conv1-d",
+      "label": "Conv1D",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Mamba",
+        "type": "section"
+      },
+      "w": 171,
+      "x": 2191,
+      "y": 626
+    },
+    {
       "h": 338,
       "id": "mixer-mixer-state-mo-e-mamba-2",
       "label": "MoE Mamba-2",
@@ -109,6 +126,42 @@
       "y": 845
     },
     {
+      "h": 133,
+      "id": "attention-kv-share-k-v-head-g-q-a-2",
+      "label": "K/V head (GQA)",
+      "role": "attention",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "kv_share",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 94,
+      "x": 2242,
+      "y": 1515
+    },
+    {
+      "h": 133,
+      "id": "attention-kv-share-k-v-head-g-q-a",
+      "label": "K/V head (GQA)",
+      "role": "attention",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "kv_share",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 94,
+      "x": 2473,
+      "y": 1515
+    },
+    {
       "h": 338,
       "id": "mixer-mixer-state-1-mo-e-mamba-2",
       "label": "1 MoE * Mamba-2",
@@ -125,6 +178,24 @@
       "w": 372,
       "x": 1469,
       "y": 1523
+    },
+    {
+      "h": 92,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 92,
+      "x": 2545,
+      "y": 2162
     },
     {
       "h": 104,

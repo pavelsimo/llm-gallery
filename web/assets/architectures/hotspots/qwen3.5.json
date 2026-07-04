@@ -342,6 +342,24 @@
       "y": 1816
     },
     {
+      "h": 98,
+      "id": "mixer-qkv-conv",
+      "label": "Conv",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qkv",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 171,
+      "x": 2181,
+      "y": 2008
+    },
+    {
       "h": 97,
       "id": "mixer-conv",
       "label": "Conv",

@@ -163,6 +163,24 @@
       "y": 1417
     },
     {
+      "h": 104,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 309,
+      "x": 391,
+      "y": 1458
+    },
+    {
       "h": 95,
       "id": "block-norm-1-norm-1",
       "label": "Norm 1",

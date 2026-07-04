@@ -163,6 +163,24 @@
       "y": 1251
     },
     {
+      "h": 91,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 92,
+      "x": 2333,
+      "y": 1410
+    },
+    {
       "h": 96,
       "id": "block-parallel-r-r-m-s-norm",
       "label": "RRRMSNorm",

@@ -74,6 +74,24 @@
       "y": 863
     },
     {
+      "h": 110,
+      "id": "attention-output-projection-sigmoid-gate",
+      "label": "Sigmoid gate",
+      "role": "attention",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedAttention",
+        "type": "anchor"
+      },
+      "w": 110,
+      "x": 3943,
+      "y": 880
+    },
+    {
       "h": 137,
       "id": "block-norm-1-r-r-m-s-norm",
       "label": "RRRMSNorm",
@@ -197,6 +215,23 @@
       "w": 245,
       "x": 3297,
       "y": 1348
+    },
+    {
+      "h": 137,
+      "id": "moe-mo-e-2",
+      "label": "MoE",
+      "role": "moe",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 537,
+      "x": 1188,
+      "y": 1414
     },
     {
       "h": 137,
@@ -341,6 +376,24 @@
       "y": 2574
     },
     {
+      "h": 110,
+      "id": "mixer-output-projection-si-l-u-gate",
+      "label": "SiLU gate",
+      "role": "mixer",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "output_projection",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 110,
+      "x": 3944,
+      "y": 2653
+    },
+    {
       "h": 137,
       "id": "block-norm-1-l-z-norm",
       "label": "LZNorm",
@@ -357,6 +410,78 @@
       "w": 246,
       "x": 3055,
       "y": 2797
+    },
+    {
+      "h": 110,
+      "id": "mixer-mixer-state-gate-activation",
+      "label": "Gate activation",
+      "role": "mixer",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 110,
+      "x": 3376,
+      "y": 2947
+    },
+    {
+      "h": 110,
+      "id": "mixer-mixer-state-gate-activation-2",
+      "label": "Gate activation",
+      "role": "mixer",
+      "rx": 19,
+      "ry": 19,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "mixer_state",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 110,
+      "x": 3132,
+      "y": 2981
+    },
+    {
+      "h": 136,
+      "id": "mixer-qkv-conv-2",
+      "label": "Conv",
+      "role": "mixer",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qkv",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 246,
+      "x": 3298,
+      "y": 3086
+    },
+    {
+      "h": 137,
+      "id": "mixer-qkv-conv",
+      "label": "Conv",
+      "role": "mixer",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qkv",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 245,
+      "x": 3043,
+      "y": 3120
     },
     {
       "h": 146,
@@ -410,6 +535,24 @@
       },
       "w": 246,
       "x": 3299,
+      "y": 3292
+    },
+    {
+      "h": 136,
+      "id": "mixer-qkv-linear-projections",
+      "label": "Linear projections",
+      "role": "mixer",
+      "rx": 24,
+      "ry": 24,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qkv",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 182,
+      "x": 3581,
       "y": 3292
     },
     {

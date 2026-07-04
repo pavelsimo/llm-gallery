@@ -146,6 +146,23 @@
       "y": 1154
     },
     {
+      "h": 168,
+      "id": "attention-4-1-local-global-sliding-window-g-q-a",
+      "label": "4:1 local:global sliding window + GQA",
+      "role": "attention",
+      "rx": 30,
+      "ry": 30,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "Attention",
+        "type": "section"
+      },
+      "w": 441,
+      "x": 750,
+      "y": 1635
+    },
+    {
       "h": 103,
       "id": "attention-rope-ro-p-e",
       "label": "RoPE",

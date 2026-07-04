@@ -111,6 +111,23 @@
       "y": 813
     },
     {
+      "h": 95,
+      "id": "moe-mo-e",
+      "label": "MoE",
+      "role": "moe",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "label": "MoE",
+        "type": "section"
+      },
+      "w": 363,
+      "x": 794,
+      "y": 925
+    },
+    {
       "h": 96,
       "id": "block-norm-2-norm-2",
       "label": "Norm 2",
@@ -127,6 +144,24 @@
       "w": 363,
       "x": 794,
       "y": 1101
+    },
+    {
+      "h": 92,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "MoE",
+        "type": "anchor"
+      },
+      "w": 91,
+      "x": 2117,
+      "y": 1389
     },
     {
       "h": 104,
@@ -162,6 +197,24 @@
       "w": 444,
       "x": 751,
       "y": 1455
+    },
+    {
+      "h": 103,
+      "id": "attention-rope-ro-p-e",
+      "label": "RoPE",
+      "role": "attention",
+      "rx": 18,
+      "ry": 18,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "rope",
+        "section_label": "Attention",
+        "type": "anchor"
+      },
+      "w": 310,
+      "x": 368,
+      "y": 1526
     },
     {
       "h": 96,

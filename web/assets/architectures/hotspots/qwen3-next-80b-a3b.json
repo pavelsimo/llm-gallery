@@ -343,6 +343,42 @@
     },
     {
       "h": 98,
+      "id": "mixer-qkv-conv-2",
+      "label": "Conv",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qkv",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 170,
+      "x": 2200,
+      "y": 1953
+    },
+    {
+      "h": 98,
+      "id": "mixer-qkv-conv",
+      "label": "Conv",
+      "role": "mixer",
+      "rx": 17,
+      "ry": 17,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "qkv",
+        "section_label": "GatedDeltaNet",
+        "type": "anchor"
+      },
+      "w": 171,
+      "x": 2029,
+      "y": 1976
+    },
+    {
+      "h": 98,
       "id": "mixer-output-projection-linear-7",
       "label": "Linear",
       "role": "mixer",

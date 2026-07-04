@@ -146,6 +146,24 @@
       "y": 1065
     },
     {
+      "h": 92,
+      "id": "moe-experts-expert-combine",
+      "label": "Expert combine",
+      "role": "moe",
+      "rx": 16,
+      "ry": 16,
+      "shape": "roundrect",
+      "source": "manual",
+      "target": {
+        "role": "experts",
+        "section_label": "DeepseekMoE",
+        "type": "anchor"
+      },
+      "w": 92,
+      "x": 2249,
+      "y": 1353
+    },
+    {
       "h": 105,
       "id": "block-norm-1-k-v-layer-norm",
       "label": "KV LayerNorm",
