@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -21,6 +22,14 @@ assert spec is not None
 builder = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
 spec.loader.exec_module(builder)
+
+
+def image_magick_command() -> list[str]:
+    if shutil.which("magick"):
+        return ["magick"]
+    if shutil.which("convert"):
+        return ["convert"]
+    pytest.skip("ImageMagick CLI is not installed")
 
 
 @pytest.fixture(scope="session")
@@ -83,7 +92,7 @@ def test_representative_svg_assets_render(slug):
     asset = manifest["assets"][slug]
     svg_path = ROOT / "web" / asset["path"]
     result = subprocess.run(
-        ["magick", str(svg_path), "-format", "%w %h", "info:"],
+        [*image_magick_command(), str(svg_path), "-format", "%w %h", "info:"],
         check=True,
         stdout=subprocess.PIPE,
         text=True,
