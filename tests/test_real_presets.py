@@ -64,6 +64,7 @@ def done_slugs() -> list[str]:
     return registry.done_slugs()
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("slug", done_slugs())
 def test_real_param_count_matches_fixture(slug: str):
     mod = registry.load(slug)

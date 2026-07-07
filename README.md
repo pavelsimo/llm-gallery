@@ -38,8 +38,11 @@ uv run python -m llm_gallery.cli train gpt2-xl --preset tiny --steps 500
 # sample text from the trained checkpoint
 uv run python -m llm_gallery.cli generate gpt2-xl --ckpt checkpoints/gpt2-xl.pt --prompt "ROMEO:"
 
-# run the parametrized test suite over every registered model
+# run the lightweight parametrized test suite over every registered model
 uv run pytest
+
+# run real-scale meta-device parameter-count audits
+uv run pytest -m slow
 ```
 
 Every model file is also runnable on its own as a smoke test:
