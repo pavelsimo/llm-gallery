@@ -13,6 +13,7 @@ const DEFAULT_DIAGRAM_PALETTE = {
   accentFill: "#52b9ee",
 };
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const VIEWER_TAB_STORAGE_PREFIX = "llm-gallery-viewer-tab:";
 
 function $(selector, root = document) {
   return root.querySelector(selector);
@@ -101,7 +102,6 @@ function initIndex() {
   const tierFilter = $("#tierFilter");
   const templateFilter = $("#templateFilter");
   const resultMeta = $("#resultMeta");
-  const learningRail = $("#learningRail");
 
   fetchJson("data/index.json")
     .then((data) => {
@@ -131,7 +131,6 @@ function initIndex() {
         grid.replaceChildren(...filtered.map(modelCard));
       }
 
-      renderLearningRail(learningRail, data.learning_path || []);
       searchInput.addEventListener("input", render);
       tierFilter.addEventListener("change", render);
       templateFilter.addEventListener("change", render);
@@ -140,24 +139,6 @@ function initIndex() {
     .catch((error) => {
       grid.replaceChildren(errorBox(error));
     });
-}
-
-function renderLearningRail(root, models) {
-  if (!root || !models.length) return;
-  const heading = el("div", "learning-heading");
-  heading.append(el("span", "badge", "Learning path"));
-  heading.append(el("p", "", "Start with the core mechanisms, then branch into variants."));
-  const links = models.map((model) => {
-    const anchor = el("a", "learning-card");
-    anchor.href = modelUrl(model.slug);
-    anchor.dataset.prefetchSlug = model.slug;
-    anchor.append(el("span", "learning-step", String(model.path_order).padStart(2, "0")));
-    anchor.append(el("strong", "", model.name));
-    anchor.append(el("span", "", templateLabel(model.template)));
-    installModelPrefetch(anchor, model.slug);
-    return anchor;
-  });
-  root.replaceChildren(heading, ...links);
 }
 
 function modelCard(model) {
@@ -284,6 +265,7 @@ function renderViewer(model, index, requestedSection, requestedTarget) {
   renderDiagram(model);
   renderSectionNav(model.sections);
   renderCode(model);
+  setupViewerTabs(model);
   setupViewerActions(model, index);
 
   const requested = resolveTarget(model, requestedTarget) || resolveTarget(model, requestedSection);
@@ -295,44 +277,18 @@ function renderViewer(model, index, requestedSection, requestedTarget) {
 
 function modelFactNodes(model) {
   const facts = [];
-  facts.push(pill(`Tier ${model.tier}`));
-  facts.push(pill(templateLabel(model.template)));
-  if (model.release) facts.push(pill(model.release));
   facts.push(el("p", "fact-line", model.archetype));
-  const config = compactConfigFacts(model.config || {});
-  if (config.length) {
-    const configWrap = el("div", "config-facts");
-    configWrap.replaceChildren(...config.map(([key, value]) => pill(`${key}: ${formatValue(value)}`)));
-    facts.push(configWrap);
-  }
+  if (model.release) facts.push(el("p", "fact-meta", `Released ${model.release}`));
   for (const note of model.notes || []) {
-    const node = pill(`${note.kind}: ${note.text}`);
-    node.classList.add("note-pill", `note-${note.kind}`);
+    const node = el("p", `fact-note note-${note.kind}`, `${note.kind}: ${note.text}`);
     facts.push(node);
   }
 
   const links = el("div", "fact-links");
   const gallery = galleryHref(model);
   if (gallery) links.append(link("Gallery", gallery));
-  if (model.links.tech_report) links.append(link("Tech report", model.links.tech_report));
-  facts.push(links);
+  if (links.childElementCount) facts.push(links);
   return facts;
-}
-
-function compactConfigFacts(config) {
-  const preferred = [
-    "vocab_size",
-    "context_length",
-    "n_layer",
-    "n_embd",
-    "hidden_size",
-    "n_head",
-    "n_kv_head",
-    "n_experts",
-    "n_experts_per_tok",
-  ];
-  const keys = preferred.filter((key) => config[key] !== undefined);
-  return keys.slice(0, 8).map((key) => [key, config[key]]);
 }
 
 function formatValue(value) {
@@ -342,6 +298,97 @@ function formatValue(value) {
   if (typeof value === "boolean") return value ? "true" : "false";
   if (Array.isArray(value)) return value.join(", ");
   return String(value);
+}
+
+function normalizedReportUrl(rawUrl) {
+  if (!rawUrl) return "";
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return "";
+  }
+
+  if (url.hostname === "arxiv.org" && url.pathname.startsWith("/abs/")) {
+    url.pathname = url.pathname.replace(/^\/abs\//, "/pdf/");
+    return url.toString();
+  }
+  if (url.hostname === "huggingface.co" && url.pathname.includes("/blob/") && /\.pdf$/i.test(url.pathname)) {
+    url.pathname = url.pathname.replace("/blob/", "/resolve/");
+    return url.toString();
+  }
+  return url.toString();
+}
+
+function embeddableReportUrl(rawUrl) {
+  const url = normalizedReportUrl(rawUrl);
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "arxiv.org" && parsed.pathname.startsWith("/pdf/")) return url;
+    if (/\.pdf$/i.test(parsed.pathname)) return url;
+  } catch {
+    return "";
+  }
+  return "";
+}
+
+function setupViewerTabs(model) {
+  const codePanel = $("#codeTabPanel");
+  const reportPanel = $("#reportTabPanel");
+  const reportFrame = $("#reportFrame");
+  const fallback = $("#reportFallback");
+  const fallbackText = $("#reportFallbackText");
+  const openLink = $("#reportOpenLink");
+  if (!codePanel || !reportPanel) return;
+
+  const originalReportUrl = model.links?.tech_report || "";
+  const embedUrl = embeddableReportUrl(originalReportUrl);
+  if (embedUrl) {
+    reportFrame.src = embedUrl;
+    reportFrame.hidden = false;
+    fallback.hidden = true;
+  } else {
+    reportFrame.removeAttribute("src");
+    reportFrame.hidden = true;
+    fallback.hidden = false;
+    fallbackText.textContent = originalReportUrl
+      ? "This report is available outside the embedded viewer."
+      : "No tech report link is available for this model.";
+    openLink.hidden = !originalReportUrl;
+    if (originalReportUrl) openLink.href = originalReportUrl;
+  }
+
+  const storageKey = `${VIEWER_TAB_STORAGE_PREFIX}${model.slug}`;
+  const storedTab = localStorage.getItem(storageKey) === "report" ? "report" : "code";
+
+  function setActiveTab(tabName, persist = true) {
+    const active = tabName === "report" ? "report" : "code";
+    document.querySelectorAll("[data-viewer-tab]").forEach((tab) => {
+      const selected = tab.dataset.viewerTab === active;
+      tab.classList.toggle("active", selected);
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    codePanel.hidden = active !== "code";
+    reportPanel.hidden = active !== "report";
+    codePanel.classList.toggle("active", active === "code");
+    reportPanel.classList.toggle("active", active === "report");
+    if (persist) localStorage.setItem(storageKey, active);
+  }
+
+  document.querySelectorAll("[data-viewer-tab]").forEach((tab) => {
+    tab.addEventListener("click", () => setActiveTab(tab.dataset.viewerTab));
+    tab.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      const next = tab.dataset.viewerTab === "code" ? "report" : "code";
+      setActiveTab(next);
+      document.querySelector(`[data-viewer-tab="${next}"]`)?.focus();
+    });
+  });
+
+  setActiveTab(storedTab, false);
 }
 
 function renderRelatedModels(models, active) {
@@ -363,7 +410,7 @@ function renderRelatedModels(models, active) {
     .filter((item) => item.score > 2)
     .sort((a, b) => b.score - a.score || a.model.slug.localeCompare(b.model.slug))
     .slice(0, 6);
-  const label = el("span", "pill", "Related");
+  const label = el("span", "related-label", "Related");
   const links = scored.map(({ model }) => {
     const anchor = el("a", "", model.name);
     anchor.href = modelUrl(model.slug);
@@ -371,10 +418,6 @@ function renderRelatedModels(models, active) {
     return anchor;
   });
   wrap.replaceChildren(label, ...links);
-}
-
-function pill(text) {
-  return el("span", "pill", text);
 }
 
 function link(text, href) {
@@ -443,11 +486,6 @@ function setupViewerActions(model, index) {
     compareLink.href = `compare.html?left=${encodeURIComponent(model.slug)}&right=${encodeURIComponent(next.slug)}`;
   }
 
-  const search = $("#codeSearch");
-  if (search) {
-    search.addEventListener("input", () => applyCodeSearch(model, search.value));
-  }
-
   $("#copyActiveLink")?.addEventListener("click", () => copyText(window.location.href));
   $("#copySection")?.addEventListener("click", () => {
     const target = resolveTarget(model, window.currentTargetId);
@@ -471,18 +509,8 @@ function isTypingTarget(target) {
 }
 
 function handleViewerShortcut(event, model, index) {
-  if (isTypingTarget(event.target)) {
-    if (event.key === "Escape" && event.target.id === "codeSearch") {
-      event.target.value = "";
-      applyCodeSearch(model, "");
-      event.target.blur();
-    }
-    return;
-  }
-  if (event.key === "/") {
-    event.preventDefault();
-    $("#codeSearch")?.focus();
-  } else if (event.key === "[") {
+  if (isTypingTarget(event.target)) return;
+  if (event.key === "[") {
     window.location.href = modelUrl(nextModel(index.models, model.slug, -1).slug);
   } else if (event.key === "]") {
     window.location.href = modelUrl(nextModel(index.models, model.slug, 1).slug);
@@ -520,41 +548,6 @@ async function copyText(text) {
     document.execCommand("copy");
     area.remove();
   }
-}
-
-function applyCodeSearch(model, rawQuery) {
-  const query = rawQuery.trim().toLowerCase();
-  const matchingSectionIds = new Set();
-  const matchingTargetIds = new Set();
-
-  if (query) {
-    for (const section of model.sections) {
-      const source = linesForRange(model, section.line_start, section.line_end).toLowerCase();
-      if (`${section.role} ${section.label} ${section.summary || ""} ${source}`.toLowerCase().includes(query)) {
-        matchingSectionIds.add(section.id);
-        matchingTargetIds.add(section.id);
-      }
-    }
-    for (const anchor of model.anchors || []) {
-      const source = linesForRange(model, anchor.line_start, anchor.line_end).toLowerCase();
-      if (`${anchor.role} ${anchor.label} ${source}`.toLowerCase().includes(query)) {
-        matchingSectionIds.add(anchor.section_id);
-        matchingTargetIds.add(anchor.id);
-      }
-    }
-  }
-
-  document.querySelectorAll(".section-chip").forEach((chip) => {
-    chip.hidden = Boolean(query) && !matchingSectionIds.has(chip.dataset.sectionId);
-  });
-  document
-    .querySelectorAll(".diagram-node, .diagram-group, .diagram-annotation, .diagram-hotspot")
-    .forEach((node) => {
-      const target = node.dataset.targetId;
-      const section = node.dataset.sectionId;
-      const match = !query || matchingTargetIds.has(target) || matchingSectionIds.has(section);
-      node.classList.toggle("search-dim", !match);
-    });
 }
 
 function renderDiagram(model, wrap = $("#diagramWrap")) {

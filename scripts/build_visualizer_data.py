@@ -99,8 +99,6 @@ ROLE_LABELS = {
     "helper": "Helper",
 }
 
-LEARNING_PATH_SLUGS = [entry.slug for entry in registry.tier_entries(1)]
-
 ANCHOR_ROLE_ORDER = {
     "embedding": 0,
     "position_embedding": 1,
@@ -2134,12 +2132,6 @@ def build_payloads() -> dict[str, Any]:
     for payload in models:
         payload["data_version"] = data_version
     index_models = [index_entry(payload) for payload in models]
-    learning_path = [
-        {**model, "path_order": order + 1}
-        for order, slug in enumerate(LEARNING_PATH_SLUGS)
-        for model in index_models
-        if model["slug"] == slug
-    ]
     return {
         "index.json": {
             "generated_by": "scripts/build_visualizer_data.py",
@@ -2147,7 +2139,6 @@ def build_payloads() -> dict[str, Any]:
             "model_count": len(models),
             "templates": sorted({payload["template"] for payload in models}),
             "role_labels": ROLE_LABELS,
-            "learning_path": learning_path,
             "models": index_models,
         },
         **{f"{payload['slug']}.json": payload for payload in models},

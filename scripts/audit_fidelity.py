@@ -31,10 +31,10 @@ from llm_gallery.models import registry
 FIELD_MAP: dict[str, list[str]] = {
     "vocab_size": ["vocab_size"],
     "context_length": ["max_position_embeddings"],
-    "n_layer": ["num_hidden_layers", "n_layer"],
-    "n_head": ["num_attention_heads", "n_head"],
+    "n_layer": ["num_hidden_layers", "n_layer", "num_blocks"],
+    "n_head": ["num_attention_heads", "n_head", "num_heads"],
     "n_kv_head": ["num_key_value_heads"],
-    "n_embd": ["hidden_size", "n_embd"],
+    "n_embd": ["hidden_size", "n_embd", "embedding_dim"],
     "head_dim": ["head_dim"],
     "intermediate_size": ["intermediate_size"],
     "moe_intermediate_size": ["moe_intermediate_size"],

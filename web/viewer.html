@@ -49,19 +49,48 @@
           <span class="dot g"></span>
           <span class="title" id="sourcePath"></span>
         </div>
-        <div class="code-toolbar">
-          <label class="code-search">
-            <span>Search</span>
-            <input id="codeSearch" type="search" placeholder="Find code" autocomplete="off" />
-          </label>
-          <div class="copy-actions" aria-label="Copy actions">
-            <button type="button" id="copyActiveLink" title="Copy link to active block">Link</button>
-            <button type="button" id="copySection" title="Copy active section code">Section</button>
-            <button type="button" id="copyCode" title="Copy full source">Code</button>
-          </div>
-          <span id="activeRange" aria-live="polite"></span>
+        <div class="viewer-tabs" role="tablist" aria-label="Model resources">
+          <button
+            class="viewer-tab active"
+            id="codeTab"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="codeTabPanel"
+            data-viewer-tab="code"
+          >
+            Code
+          </button>
+          <button
+            class="viewer-tab"
+            id="reportTab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="reportTabPanel"
+            data-viewer-tab="report"
+          >
+            Tech Report
+          </button>
         </div>
-        <pre class="code-block" tabindex="0"><code id="codeLines"></code></pre>
+        <div class="tab-panel code-tab-panel" id="codeTabPanel" role="tabpanel" aria-labelledby="codeTab">
+          <div class="code-toolbar">
+            <div class="copy-actions" aria-label="Copy actions">
+              <button type="button" id="copyActiveLink" title="Copy link to active block">Link</button>
+              <button type="button" id="copySection" title="Copy active section code">Section</button>
+              <button type="button" id="copyCode" title="Copy full source">Code</button>
+            </div>
+            <span id="activeRange" aria-live="polite"></span>
+          </div>
+          <pre class="code-block" tabindex="0"><code id="codeLines"></code></pre>
+        </div>
+        <div class="tab-panel report-tab-panel" id="reportTabPanel" role="tabpanel" aria-labelledby="reportTab" hidden>
+          <iframe id="reportFrame" title="Tech report" loading="lazy"></iframe>
+          <div class="report-fallback" id="reportFallback" hidden>
+            <p id="reportFallbackText"></p>
+            <a id="reportOpenLink" href="#" target="_blank" rel="noreferrer">Open report</a>
+          </div>
+        </div>
       </section>
     </main>
   </body>

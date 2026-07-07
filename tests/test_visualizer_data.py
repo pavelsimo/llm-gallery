@@ -34,8 +34,7 @@ def test_index_lists_every_registry_entry(payloads):
     assert [model["slug"] for model in index["models"]] == [entry.slug for entry in registry.REGISTRY]
     assert all(model["gallery_card_id"] for model in index["models"])
     assert index["data_version"]
-    assert [model["slug"] for model in index["learning_path"]] == [entry.slug for entry in registry.tier_entries(1)]
-    assert [model["path_order"] for model in index["learning_path"]] == list(range(1, len(index["learning_path"]) + 1))
+    assert "learning_path" not in index
 
 
 def test_payload_data_versions_match_index(payloads):
