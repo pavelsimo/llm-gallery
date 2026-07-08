@@ -135,6 +135,22 @@ def test_payload_exposes_gallery_card_id_and_marked_notes(payloads):
     assert any(note["kind"] == "note" and "Mamba/transformer hybrid" in note["text"] for note in granite["notes"])
 
 
+def test_gallery_links_use_article_urls_or_card_fallback(payloads):
+    olmo = payloads["olmo2-7b.json"]
+    assert (
+        olmo["links"]["gallery"]
+        == "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A723-olmo-2-summary"
+    )
+
+    phi = payloads["phi-4.json"]
+    assert phi["links"]["gallery"] == "https://sebastianraschka.com/llm-architecture-gallery/#card-phi-4"
+
+    for entry in registry.REGISTRY:
+        gallery = payloads[f"{entry.slug}.json"]["links"]["gallery"]
+        assert gallery.startswith("https://")
+        assert "#" in gallery
+
+
 def test_wave2_assumption_notes_are_exposed(payloads):
     expected = {
         "glm-5.1": "sparse key selection / index sharing is documented",

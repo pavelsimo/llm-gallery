@@ -219,6 +219,65 @@ GALLERY_SOURCE_KEYS = {
     "glm-5.2": "glm-5-2",
 }
 
+GALLERY_BASE_URL = "https://sebastianraschka.com/llm-architecture-gallery/"
+
+GALLERY_ARTICLE_URLS = {
+    "gpt2-xl": "https://magazine.sebastianraschka.com/p/from-gpt-2-to-gpt-oss-analyzing-the#%C2%A72-coming-from-gpt-2",
+    "llama3-8b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A723-olmo-2-summary",
+    "llama3.2-1b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A761-qwen3-dense",
+    "olmo2-7b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A723-olmo-2-summary",
+    "deepseek-v3": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A75-llama-4",
+    "deepseek-r1": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A78-kimi-k2-and-kimi-k2-thinking",
+    "gemma3-27b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A74-mistral-small-31",
+    "mistral-small-3.1": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A74-mistral-small-31",
+    "llama4-maverick": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A75-llama-4",
+    "qwen3-0.6b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A761-qwen3-dense",
+    "qwen3-235b-a22b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A762-qwen3-moe",
+    "qwen3-30b-a3b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A79-gpt-oss",
+    "qwen3-32b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A715-olmo-3-thinking",
+    "qwen3-4b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A77-smollm3",
+    "qwen3-8b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A715-olmo-3-thinking",
+    "smollm3-3b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A77-smollm3",
+    "kimi-k2": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A78-kimi-k2-and-kimi-k2-thinking",
+    "glm-4.5": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A711-glm-45",
+    "gpt-oss-120b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A79-gpt-oss",
+    "gpt-oss-20b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A79-gpt-oss",
+    "gemma3-270m": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A74-mistral-small-31",
+    "grok-2.5": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A710-grok-25",
+    "qwen3-next-80b-a3b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A7121-expert-size-and-number",
+    "minimax-m2": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A7131-per-layer-qk-norm",
+    "kimi-linear": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A7144-kimi-linear-vs-qwen3-next",
+    "olmo3-32b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A715-olmo-3-thinking",
+    "olmo3-7b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A715-olmo-3-thinking",
+    "deepseek-v3.2": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A716-deepseek-v32",
+    "mistral-large-3": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A717-mistral-3-large",
+    "nemotron3-nano-30b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A7181-nemotron-3-nano",
+    "mimo-v2-flash": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A719-xiaomi-mimo-v2-flash",
+    "glm-4.7": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A721-glm-5",
+    "arcee-trinity-large": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A720-arcee-ai-trinity-large",
+    "glm-5": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A721-glm-5",
+    "nemotron3-super-120b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A7182-nemotron-3-super",
+    "gemma4-31b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A723-gemma-4",
+    "gemma4-26b-a4b": "https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison#%C2%A723-gemma-4",
+    "llama3.2-3b": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A77-nanbeige-41-3b-a-strong-llama-3-successor",
+    "qwen3-coder-flash": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A74-qwen3-coder-next-an-attention-hybrid-for-coding",
+    "kimi-k2.5": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A72-moonshot-ais-kimi-k25-a-deepseek-like-model-at-a-1-trillion-parameter-scale",
+    "step-3.5-flash": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A73-stepfuns-step-35-flash-good-performance-at-great-tokens-sec-throughput",
+    "nanbeige-4.1": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A77-nanbeige-41-3b-a-strong-llama-3-successor",
+    "minimax-m2.5": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A76-minimax-m25-a-strong-coder-with-only-230b-parameters",
+    "tiny-aya": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A710-tiny-aya-a-335b-model-with-strong-multilingual-support",
+    "ling-2.5": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A79-ant-groups-ling-25-1t-with-lightning-attention",
+    "qwen3.5": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A78-qwen35-and-the-continuation-of-hybrid-attention",
+    "sarvam-30b": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A7update-1-sarvam-30b-and-105b-mar-6-2026",
+    "sarvam-105b": "https://magazine.sebastianraschka.com/p/a-dream-of-spring-for-open-weight#%C2%A7update-1-sarvam-30b-and-105b-mar-6-2026",
+    "gemma4-e2b": "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures#%C2%A71-reusing-kv-tensors-across-layers-to-shrink-the-cache-gemma-4",
+    "gemma4-e4b": "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures#%C2%A71-reusing-kv-tensors-across-layers-to-shrink-the-cache-gemma-4",
+    "deepseek-v4-flash": "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures#%C2%A75-csahca-mhc-and-compressed-attention-caches-deepseek-v4",
+    "deepseek-v4-pro": "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures#%C2%A75-csahca-mhc-and-compressed-attention-caches-deepseek-v4",
+    "laguna-xs.2": "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures#%C2%A73-layer-wise-attention-budgeting-laguna-xs2",
+    "zaya1-8b": "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures#%C2%A74-compressed-convolutional-attention-zaya1-8b",
+}
+
 DIAGRAM_PALETTES = {
     "gpt2-xl": {"accent": "#3080a8", "accentFill": "#98b8c8"},
     "llama3-8b": {"accent": "#0070b0", "accentFill": "#c0e0e8"},
@@ -2045,6 +2104,19 @@ def role_counts(sections: list[dict[str, Any]]) -> dict[str, int]:
     return dict(sorted(counts.items(), key=lambda item: CORE_ROLE_ORDER.get(item[0], 99)))
 
 
+def gallery_card_url(base_url: str, gallery_card_id: str) -> str:
+    return f"{base_url.rstrip('/')}/#card-{gallery_card_id}"
+
+
+def gallery_url_for(entry: registry.Entry, constants: dict[str, Any]) -> str:
+    article_url = GALLERY_ARTICLE_URLS.get(entry.slug)
+    if article_url:
+        return article_url
+    base_url = constants.get("GALLERY_URL") or GALLERY_BASE_URL
+    gallery_card_id = GALLERY_SOURCE_KEYS.get(entry.slug, entry.slug)
+    return gallery_card_url(base_url, gallery_card_id)
+
+
 def build_model_payload(entry: registry.Entry, architecture_manifest: dict[str, Any] | None = None) -> dict[str, Any]:
     path = MODELS_DIR / f"{entry.module}.py"
     source = path.read_text(encoding="utf-8")
@@ -2061,6 +2133,7 @@ def build_model_payload(entry: registry.Entry, architecture_manifest: dict[str, 
     diagram = add_hotspot_metadata(entry.slug, diagram, sections, anchors)
     docstring = ast.get_docstring(tree, clean=True) or ""
     gallery_card_id = GALLERY_SOURCE_KEYS.get(entry.slug, entry.slug)
+    gallery_url = gallery_url_for(entry, constants)
 
     return {
         "slug": entry.slug,
@@ -2080,7 +2153,7 @@ def build_model_payload(entry: registry.Entry, architecture_manifest: dict[str, 
         "gallery_card_id": gallery_card_id,
         "notes": extract_marked_notes(tree),
         "links": {
-            "gallery": constants.get("GALLERY_URL", ""),
+            "gallery": gallery_url,
             "tech_report": constants.get("TECH_REPORT_URL", ""),
         },
         "sections": sections,

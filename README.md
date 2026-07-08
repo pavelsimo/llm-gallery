@@ -1,19 +1,21 @@
 # llm-gallery
 
 PyTorch reimplementations of **every model** in Sebastian Raschka's
-[LLM Architecture Gallery](https://sebastianraschka.com/llm-architecture-gallery), built for **learning**
-PyTorch and modern LLM architecture by reading and running clean code.
+[LLM Architecture Gallery](https://sebastianraschka.com/llm-architecture-gallery). The goal is to learn how
+modern LLMs actually work by building each architecture from scratch, then reading, running, and training it.
 
 ## Philosophy
 
-- **One self-contained file per model.** Open any file in `llm_gallery/models/` and read the whole
-  architecture top-to-bottom — every norm, attention, and feed-forward block is defined right there
-  (nanoGPT style). Shared building blocks are intentionally duplicated across files so nothing is hidden
-  behind imports.
-- **Architecture, not weights.** Models are randomly initialized. There is no HuggingFace dependency and no
-  pretrained-weight loading — the focus is the *mechanics*: shapes, forward/backward, parameter counts.
-- **Runnable.** A small shared harness can train any model on a tiny dataset and sample text from it, so you
-  can watch an architecture actually learn.
+Every model lives in a single self-contained file. Open anything in `llm_gallery/models/` and you can read
+the whole architecture top to bottom: every norm, attention, and feed-forward block is defined right there,
+nanoGPT style. Building blocks are deliberately duplicated across files so nothing hides behind an import.
+
+The focus is architecture, not weights. Models are randomly initialized, there is no HuggingFace dependency,
+and no pretrained weights get loaded. What matters is the mechanics: shapes, the forward and backward pass,
+parameter counts.
+
+And everything runs. A small shared harness can train any model on a tiny dataset and sample text from it,
+so you can watch an architecture actually learn.
 
 ## Quickstart
 
@@ -53,25 +55,24 @@ uv run python llm_gallery/models/gpt2_xl.py
 
 ## Interactive visualizer
 
-The repo also includes a static side-by-side model/code visualizer in `web/`:
+The visualizer is live at **<https://pavelsimo.github.io/llm-gallery/>**. It shows each model's diagram and
+source side by side: clicking a diagram block highlights the matching Python, and clicking code highlights
+the matching diagram node.
+
+To build and serve it locally:
 
 ```bash
 uv run python scripts/build_visualizer_data.py
 python -m http.server 8000 --directory web
 ```
 
-Open `http://localhost:8000` to browse every registered model. The generated JSON in `web/data/`
-maps diagram blocks to exact source line ranges, so clicking a block highlights the corresponding
-Python section and clicking code highlights the matching diagram node.
+## Presets
 
-## Hardware notes
-
-Developed against a GTX 1060 6GB (Pascal). There's **no hardware bf16** on Pascal, so the code defaults to
-**fp32** and the runnable `tiny` presets are sized to train on CPU or a small GPU in minutes. The `real`
-presets in each file encode the *published* dimensions for reference; they are documentation, not meant to be
-instantiated full-size on modest hardware. For `real.context_length`, the convention is: use the public
-HuggingFace `config.json` `max_position_embeddings` when available; otherwise use the gallery card's context
-length. This may differ from the short `tiny` preset context and from rounded labels like "128K".
+Each model file defines two presets. `tiny` is the runnable one, sized to train on a CPU or small GPU in
+minutes; it's what the CLI, tests, and training harness use. `real` records the published dimensions for
+reference and isn't meant to be instantiated full-size. For `real.context_length`, the convention is the
+public HuggingFace `config.json` `max_position_embeddings` when available, otherwise the gallery card's
+context length, which can differ from rounded labels like "128K".
 
 ## Layout
 
@@ -125,5 +126,4 @@ How the models were built:
 
 A handful of long-tail entries have little public detail, or use mechanisms not yet implemented here
 (e.g. sparse/compressed attention, latent MoE, short-conv blocks). Those are modeled as their nearest
-implemented archetype with an explicit `# ASSUMPTION:` / `NOTE:` in the file docstring. The `real`
-presets encode published dimensions for reference; the runnable preset everywhere is `tiny`.
+implemented archetype with an explicit `# ASSUMPTION:` / `NOTE:` in the file docstring.

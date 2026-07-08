@@ -53,7 +53,10 @@ function modelUrl(slug, extra = {}) {
 
 function galleryHref(model) {
   if (!model.links?.gallery) return "";
-  return model.gallery_card_id ? `${model.links.gallery}#${model.gallery_card_id}` : model.links.gallery;
+  if (!model.gallery_card_id || model.links.gallery.includes("#")) return model.links.gallery;
+  const anchor = model.gallery_card_id.startsWith("card-") ? model.gallery_card_id : `card-${model.gallery_card_id}`;
+  const base = model.links.gallery.endsWith("/") ? model.links.gallery : `${model.links.gallery}/`;
+  return `${base}#${anchor}`;
 }
 
 function templateLabel(template) {
