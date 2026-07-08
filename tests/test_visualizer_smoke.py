@@ -55,11 +55,15 @@ def test_viewer_diagram_code_roundtrip():
             assert github_icon_box["width"] <= 24
             assert github_icon_box["height"] <= 24
 
+            page.evaluate("""() => localStorage.setItem("llm-gallery-viewer-tab:llama3-8b", "report")""")
             page.goto(f"{base_url}/viewer.html?model=llama3-8b", wait_until="networkidle")
             assert page.locator(".terminal-bar .dot").count() == 0
             assert page.locator("#copyActiveLink").count() == 0
             assert page.locator("#copySection").count() == 0
             assert page.locator("#copyCode").count() == 0
+            expect(page.locator("#codeTab")).to_have_attribute("aria-selected", "true")
+            expect(page.locator("#codeTabPanel")).to_be_visible()
+            expect(page.locator("#reportTabPanel")).to_be_hidden()
             gallery_tab = page.locator("#galleryTab")
             expect(gallery_tab).to_be_visible()
             assert gallery_tab.get_attribute("href") is None

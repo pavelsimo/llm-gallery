@@ -13,7 +13,6 @@ const DEFAULT_DIAGRAM_PALETTE = {
   accentFill: "#52b9ee",
 };
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-const VIEWER_TAB_STORAGE_PREFIX = "llm-gallery-viewer-tab:";
 
 function $(selector, root = document) {
   return root.querySelector(selector);
@@ -399,16 +398,13 @@ function setupViewerTabs(model) {
     if (originalReportUrl) openLink.href = originalReportUrl;
   }
 
-  const storageKey = `${VIEWER_TAB_STORAGE_PREFIX}${model.slug}`;
   const panelsByTab = {
     code: codePanel,
     report: reportPanel,
     gallery: galleryPanel,
   };
-  const storedTabName = localStorage.getItem(storageKey);
-  const storedTab = panelsByTab[storedTabName] ? storedTabName : "code";
 
-  function setActiveTab(tabName, persist = true) {
+  function setActiveTab(tabName) {
     const active = panelsByTab[tabName] ? tabName : "code";
     document.querySelectorAll("[data-viewer-tab]").forEach((tab) => {
       const selected = tab.dataset.viewerTab === active;
@@ -421,7 +417,6 @@ function setupViewerTabs(model) {
       panel.hidden = !selected;
       panel.classList.toggle("active", selected);
     }
-    if (persist) localStorage.setItem(storageKey, active);
   }
 
   document.querySelectorAll("[data-viewer-tab]").forEach((tab) => {
@@ -439,7 +434,7 @@ function setupViewerTabs(model) {
     });
   });
 
-  setActiveTab(storedTab, false);
+  setActiveTab("code");
 }
 
 function renderRelatedModels(models, active) {
