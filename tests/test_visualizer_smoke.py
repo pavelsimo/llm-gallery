@@ -72,11 +72,11 @@ def test_viewer_diagram_code_roundtrip():
 
             popups = []
             page.on("popup", lambda popup: popups.append(popup))
-            viewer_url = page.url
             gallery_tab.click()
             page.wait_for_timeout(100)
             assert popups == []
-            assert page.url == viewer_url
+            assert page.url.startswith(f"{base_url}/viewer.html")
+            assert "tab=gallery" in page.url
             expect(page.locator("#galleryTab")).to_have_attribute("aria-selected", "true")
             expect(page.locator("#galleryTabPanel")).to_be_visible()
             expect(page.locator("#codeTabPanel")).to_be_hidden()
@@ -99,6 +99,8 @@ def test_viewer_diagram_code_roundtrip():
             expect(page.locator("#galleryTabPanel")).to_be_hidden()
             page.locator("#codeTab").focus()
             page.keyboard.press("ArrowRight")
+            expect(page.locator("#learnTabPanel")).to_be_visible()
+            page.keyboard.press("ArrowRight")
             expect(page.locator("#reportTabPanel")).to_be_visible()
             page.keyboard.press("ArrowRight")
             expect(page.locator("#galleryTabPanel")).to_be_visible()
@@ -117,7 +119,8 @@ def test_viewer_diagram_code_roundtrip():
                 """
                 () => {
                   const target = window.currentModel.anchors.find((anchor) => anchor.id === "model.lm-head");
-                  return { lineStart: target.line_start, lineEnd: target.line_end };
+                  const usage = target.ranges.filter((range) => range.kind === "usage");
+                  return { lineStart: target.line_start, lineEnd: target.line_end, usage };
                 }
                 """
             )
@@ -160,6 +163,27 @@ def test_viewer_diagram_code_roundtrip():
                 target["lineStart"],
             )
 
+            assert target["usage"], "model.lm-head should carry at least one usage range"
+            assert page.evaluate(
+                """
+                (usage) => {
+                  const highlighted = [...document.querySelectorAll(".code-line.usage-active")]
+                    .map((line) => Number(line.dataset.line));
+                  const expected = usage.flatMap((range) => {
+                    const lines = [];
+                    for (let line = range.line_start; line <= range.line_end; line += 1) lines.push(line);
+                    return lines;
+                  });
+                  return JSON.stringify(highlighted) === JSON.stringify(expected);
+                }
+                """,
+                target["usage"],
+            )
+
+            usage_line = target["usage"][0]["line_start"]
+            page.locator(f'.code-line[data-line="{usage_line}"]').click()
+            assert page.evaluate("() => window.currentTargetId") == "model.lm-head"
+
             attention_line = page.evaluate(
                 """
                 () => window.currentModel.sections.find((section) => section.role === "attention").line_start
@@ -168,5 +192,35 @@ def test_viewer_diagram_code_roundtrip():
             page.locator(f'.code-line[data-line="{attention_line}"]').click()
             assert page.evaluate("() => window.currentTargetId") == "attention"
             expect(page.locator('.diagram-hotspot.active[data-target-id="attention"]').first).to_be_visible()
+
+            # Learn tab: concept explanation follows the active target.
+            page.locator("#learnTab").click()
+            expect(page.locator("#learnTabPanel")).to_be_visible()
+            expect(page.locator("#codeTabPanel")).to_be_hidden()
+            assert "tab=learn" in page.url
+            expect(page.locator("#conceptTitle")).not_to_have_text("")
+            attention_concept_title = page.locator("#conceptTitle").inner_text()
+            assert page.locator("#conceptBody .katex").count() > 0, "KaTeX did not render any equations"
+            assert page.locator("#conceptIndex .concept-chip").count() > 0
+
+            page.locator('.diagram-hotspot[data-target-id="model.lm-head"]').click()
+            assert page.evaluate("() => window.currentTargetId") == "model.lm-head"
+            expect(page.locator("#conceptTitle")).not_to_have_text(attention_concept_title)
+
+            # Concept-index chips round-trip into diagram/code selection.
+            page.locator("#conceptIndex .concept-chip").first.click()
+            assert page.evaluate("() => window.currentTargetId") == "config"
+            expect(page.locator('.section-chip[data-section-id="config"]').first).to_have_class(
+                "section-chip role-config active"
+            )
+
+            page.locator("#codeTab").click()
+            assert "tab=learn" not in page.url
+
+            # Deep link straight into the Learn tab.
+            page.goto(f"{base_url}/viewer.html?model=llama3-8b&tab=learn&section=attention", wait_until="networkidle")
+            expect(page.locator("#learnTabPanel")).to_be_visible()
+            expect(page.locator("#conceptTitle")).not_to_have_text("")
+            assert page.locator("#conceptBody .katex").count() > 0
         finally:
             browser.close()

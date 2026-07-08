@@ -45,6 +45,19 @@ function modelDataPath(slug, version = DATA_VERSION) {
   return versionedDataPath(`data/${encodeURIComponent(slug)}.json`, version);
 }
 
+let CONCEPTS_PROMISE = null;
+
+function loadConcepts() {
+  if (!CONCEPTS_PROMISE) {
+    CONCEPTS_PROMISE = fetchJson(versionedDataPath("data/concepts.json")).then((payload) => {
+      const byId = new Map();
+      for (const concept of payload.concepts || []) byId.set(concept.id, concept);
+      return byId;
+    });
+  }
+  return CONCEPTS_PROMISE;
+}
+
 function modelUrl(slug, extra = {}) {
   const params = new URLSearchParams({ model: slug, ...extra });
   return `viewer.html?${params.toString()}`;
@@ -190,6 +203,7 @@ function initViewer() {
   const requestedSlug = params.get("model");
   const requestedSection = params.get("section");
   const requestedTarget = params.get("target");
+  const requestedTab = params.get("tab");
 
   fetchJson("data/index.json")
     .then((index) => {
@@ -210,7 +224,7 @@ function initViewer() {
       }
       return fetchJson(modelDataPath(slug, index.data_version)).then((model) => ({ index, model }));
     })
-    .then(({ index, model }) => renderViewer(model, index, requestedSection, requestedTarget))
+    .then(({ index, model }) => renderViewer(model, index, requestedSection, requestedTarget, requestedTab))
     .catch((error) => {
       $(".viewer-shell").replaceChildren(errorBox(error));
     });
@@ -254,7 +268,7 @@ function showNotice(message) {
   notice.hidden = false;
 }
 
-function renderViewer(model, index, requestedSection, requestedTarget) {
+function renderViewer(model, index, requestedSection, requestedTarget, requestedTab) {
   document.title = `${model.name} · visualizer`;
   $("#viewerSlug").textContent = model.slug;
   $("#viewerName").textContent = model.name;
@@ -267,7 +281,7 @@ function renderViewer(model, index, requestedSection, requestedTarget) {
   renderDiagram(model);
   renderSectionNav(model.sections);
   renderCode(model);
-  setupViewerTabs(model);
+  setupViewerTabs(model, requestedTab);
   setupViewerActions(model, index);
 
   const requested = resolveTarget(model, requestedTarget) || resolveTarget(model, requestedSection);
@@ -336,8 +350,9 @@ function embeddableReportUrl(rawUrl) {
   return "";
 }
 
-function setupViewerTabs(model) {
+function setupViewerTabs(model, requestedTab) {
   const codePanel = $("#codeTabPanel");
+  const learnPanel = $("#learnTabPanel");
   const reportPanel = $("#reportTabPanel");
   const galleryPanel = $("#galleryTabPanel");
   const reportFrame = $("#reportFrame");
@@ -403,6 +418,7 @@ function setupViewerTabs(model) {
     report: reportPanel,
     gallery: galleryPanel,
   };
+  if (learnPanel) panelsByTab.learn = learnPanel;
 
   function setActiveTab(tabName) {
     const active = panelsByTab[tabName] ? tabName : "code";
@@ -416,6 +432,17 @@ function setupViewerTabs(model) {
       const selected = tabName === active;
       panel.hidden = !selected;
       panel.classList.toggle("active", selected);
+    }
+    if (active === "learn") renderLearnPanel(model);
+    const params = new URLSearchParams(window.location.search);
+    if (active === "code") {
+      params.delete("tab");
+    } else {
+      params.set("tab", active);
+    }
+    const query = params.toString();
+    if (query !== window.location.search.replace(/^\?/, "")) {
+      window.history.replaceState(null, "", query ? `${window.location.pathname}?${query}` : window.location.pathname);
     }
   }
 
@@ -434,7 +461,101 @@ function setupViewerTabs(model) {
     });
   });
 
-  setActiveTab("code");
+  setActiveTab(panelsByTab[requestedTab] ? requestedTab : "code");
+}
+
+function conceptTargets(model) {
+  const map = new Map();
+  for (const target of [...model.sections, ...(model.anchors || [])]) {
+    if (target.concept_id && !map.has(target.concept_id)) map.set(target.concept_id, target);
+  }
+  return map;
+}
+
+function renderMathIn(root) {
+  if (typeof katex === "undefined") return;
+  root.querySelectorAll(".katex-src").forEach((node) => {
+    katex.render(node.dataset.tex || "", node, {
+      displayMode: node.dataset.display === "1",
+      throwOnError: false,
+    });
+  });
+}
+
+function renderConceptIndex(model, concepts, activeConceptId) {
+  const nav = $("#conceptIndex");
+  if (!nav) return;
+  const entries = [...conceptTargets(model).entries()].filter(([id]) => concepts.has(id));
+  nav.replaceChildren(
+    ...entries.map(([id, target]) => {
+      const concept = concepts.get(id);
+      const button = el("button", `concept-chip${id === activeConceptId ? " active" : ""}`);
+      button.type = "button";
+      button.title = concept.summary;
+      button.append(el("span", "concept-chip-emoji", concept.emoji));
+      button.append(el("span", "concept-chip-label", concept.title));
+      button.addEventListener("click", () => activateTarget(model, target.id, { scroll: false }));
+      return button;
+    })
+  );
+}
+
+function renderConceptRelated(model, concepts, concept) {
+  const footer = $("#conceptRelated");
+  if (!footer) return;
+  const targets = conceptTargets(model);
+  const related = (concept.related || []).filter((id) => concepts.has(id) && targets.has(id));
+  footer.hidden = related.length === 0;
+  footer.replaceChildren(
+    el("span", "concept-related-label", "Related"),
+    ...related.map((id) => {
+      const other = concepts.get(id);
+      const button = el("button", "concept-chip", `${other.emoji} ${other.title}`);
+      button.type = "button";
+      button.addEventListener("click", () => activateTarget(model, targets.get(id).id, { scroll: false }));
+      return button;
+    })
+  );
+}
+
+let LAST_CONCEPT_ID = null;
+
+function renderLearnPanel(model) {
+  const card = $("#conceptCard");
+  if (!card) return;
+  loadConcepts()
+    .then((concepts) => {
+      const target = resolveTarget(model, window.currentTargetId) || model.sections[0] || null;
+      const concept = target ? concepts.get(target.concept_id) : null;
+      renderConceptIndex(model, concepts, concept ? concept.id : null);
+      const fallback = $("#learnFallback");
+      if (!concept) {
+        card.hidden = true;
+        $("#learnFallbackText").textContent = "No explanation is available for this selection.";
+        fallback.hidden = false;
+        return;
+      }
+      fallback.hidden = true;
+      card.hidden = false;
+      if (concept.id !== LAST_CONCEPT_ID) {
+        LAST_CONCEPT_ID = concept.id;
+        const scroll = $("#conceptScroll");
+        if (scroll) scroll.scrollTop = 0;
+      }
+      $("#conceptEmoji").textContent = concept.emoji;
+      $("#conceptTitle").textContent = concept.title;
+      $("#conceptContext").textContent = `${target.label} · lines ${target.line_start}-${target.line_end}`;
+      $("#conceptSummary").textContent = concept.summary;
+      const body = $("#conceptBody");
+      body.innerHTML = concept.body_html;
+      renderMathIn(body);
+      renderConceptRelated(model, concepts, concept);
+    })
+    .catch(() => {
+      card.hidden = true;
+      $("#learnFallbackText").textContent = "Concept explanations could not be loaded.";
+      $("#learnFallback").hidden = false;
+    });
 }
 
 function renderRelatedModels(models, active) {
@@ -1086,10 +1207,20 @@ function sectionForLine(sections, line) {
   return sections.find((section) => line >= section.line_start && line <= section.line_end);
 }
 
+function targetRanges(target) {
+  return (
+    target.ranges || [{ kind: "definition", line_start: target.line_start, line_end: target.line_end }]
+  );
+}
+
+function targetSpan(target) {
+  return targetRanges(target).reduce((total, range) => total + range.line_end - range.line_start + 1, 0);
+}
+
 function targetForLine(model, line) {
   const anchors = (model.anchors || [])
-    .filter((anchor) => line >= anchor.line_start && line <= anchor.line_end)
-    .sort((a, b) => a.line_count - b.line_count || a.line_start - b.line_start);
+    .filter((anchor) => targetRanges(anchor).some((range) => line >= range.line_start && line <= range.line_end))
+    .sort((a, b) => targetSpan(a) - targetSpan(b) || a.line_start - b.line_start);
   return anchors[0] || sectionForLine(model.sections, line);
 }
 
@@ -1120,6 +1251,7 @@ function activateTarget(model, targetId, options = {}) {
   const exactTargetId = target.id;
 
   document.querySelectorAll(".code-line.active").forEach((line) => line.classList.remove("active"));
+  document.querySelectorAll(".code-line.usage-active").forEach((line) => line.classList.remove("usage-active"));
   document.querySelectorAll(".code-line.section-active").forEach((line) => line.classList.remove("section-active"));
   if (section) {
     for (let line = section.line_start; line <= section.line_end; line += 1) {
@@ -1127,9 +1259,12 @@ function activateTarget(model, targetId, options = {}) {
       if (row) row.classList.add("section-active");
     }
   }
-  for (let line = target.line_start; line <= target.line_end; line += 1) {
-    const row = document.querySelector(`.code-line[data-line="${line}"]`);
-    if (row) row.classList.add("active");
+  for (const range of targetRanges(target)) {
+    const className = range.kind === "usage" ? "usage-active" : "active";
+    for (let line = range.line_start; line <= range.line_end; line += 1) {
+      const row = document.querySelector(`.code-line[data-line="${line}"]`);
+      if (row) row.classList.add(className);
+    }
   }
 
   document
@@ -1144,7 +1279,13 @@ function activateTarget(model, targetId, options = {}) {
   document.querySelectorAll(".section-chip.active").forEach((chip) => chip.classList.remove("active"));
   document.querySelectorAll(`.section-chip[data-section-id="${sectionId}"]`).forEach((chip) => chip.classList.add("active"));
 
-  $("#activeRange").textContent = `${target.label} · lines ${target.line_start}-${target.line_end}`;
+  const usageText = targetRanges(target)
+    .filter((range) => range.kind === "usage")
+    .map((range) => (range.line_start === range.line_end ? `${range.line_start}` : `${range.line_start}-${range.line_end}`))
+    .join(", ");
+  $("#activeRange").textContent =
+    `${target.label} · lines ${target.line_start}-${target.line_end}` +
+    (usageText ? ` · used at ${usageText}` : "");
   if (scroll) {
     const start = document.querySelector(`.code-line[data-line="${target.line_start}"]`);
     if (start) centerCodeLine(start);
@@ -1160,6 +1301,8 @@ function activateTarget(model, targetId, options = {}) {
     }
     window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
   }
+  const learnPanel = $("#learnTabPanel");
+  if (learnPanel && !learnPanel.hidden) renderLearnPanel(model);
 }
 
 function centerCodeLine(line) {

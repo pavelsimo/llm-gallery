@@ -10,12 +10,14 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import html
 import json
 import re
 import sys
 from pathlib import Path
 from typing import Any
 
+import markdown
 from pygments import lex
 from pygments.lexers import PythonLexer
 from pygments.token import Token
@@ -25,6 +27,7 @@ MODELS_DIR = ROOT / "llm_gallery" / "models"
 DATA_DIR = ROOT / "web" / "data"
 ARCHITECTURE_MANIFEST_PATH = ROOT / "web" / "assets" / "architectures" / "manifest.json"
 HOTSPOTS_DIR = ROOT / "web" / "assets" / "architectures" / "hotspots"
+CONCEPTS_DIR = ROOT / "llm_gallery" / "concepts"
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -97,6 +100,66 @@ ROLE_LABELS = {
     "block": "Block",
     "model": "Full Model",
     "helper": "Helper",
+}
+
+# Concept mapping: every section and anchor gets a concept_id pointing into
+# llm_gallery/concepts/*.md (bundled as web/data/concepts.json). Resolution order for
+# sections: label match, then attention-variant detection via anchors, then role.
+SECTION_ROLE_CONCEPTS = {
+    "config": "hyperparameters",
+    "presets": "hyperparameters",
+    "position": "rope",
+    "attention": "attention",
+    "attention_helper": "gqa",
+    "mlp": "mlp",
+    "expert": "moe",
+    "moe": "moe",
+    "block": "transformer-block",
+    "model": "decoder-model",
+}
+
+SECTION_LABEL_CONCEPTS = {
+    "LayerNorm": "layernorm",
+    "RMSNorm": "rmsnorm",
+    "GemmaRMSNorm": "rmsnorm",
+    "MLA": "mla",
+    "MiniMaxSparseAttention": "sparse-attention",
+    "GatedAttention": "gated-attention",
+    "SwiGLU": "glu-feedforward",
+    "GeGLU": "glu-feedforward",
+    "DenseMLP": "glu-feedforward",
+    "Mamba": "mamba",
+    "LinearAttention": "linear-attention",
+    "GatedDeltaNet": "linear-attention",
+    "mLSTM": "mlstm",
+}
+
+ANCHOR_ROLE_CONCEPTS = {
+    "embedding": "token-embeddings",
+    "position_embedding": "learned-positions",
+    "embedding_dropout": "dropout",
+    "attention_dropout": "dropout",
+    "mlp_dropout": "dropout",
+    "qkv": "qkv-projections",
+    "output_projection": "qkv-projections",
+    "qk_norm": "qk-norm",
+    "rope": "rope",
+    "kv_share": "gqa",
+    "attention_math": "attention",
+    "sparse_attention": "sparse-attention",
+    "latent_query": "mla",
+    "latent_kv": "mla",
+    "activation": "activations",
+    "residual_attn": "residuals",
+    "residual_mlp": "residuals",
+    "block_stack": "transformer-block",
+    "lm_head": "lm-head",
+    "output_head": "lm-head",
+    "router": "moe-router",
+    "topk": "moe-router",
+    "experts": "moe",
+    "shared_expert": "shared-experts",
+    "parallel": "parallel-block",
 }
 
 ANCHOR_ROLE_ORDER = {
@@ -566,6 +629,72 @@ def combined_range(statements: list[ast.stmt]) -> tuple[int, int] | None:
     )
 
 
+def merge_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted(ranges):
+        if merged and start <= merged[-1][1] + 1:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def assigned_self_attrs(statements: list[ast.stmt]) -> set[str]:
+    attrs: set[str] = set()
+    for statement in statements:
+        if isinstance(statement, ast.Assign):
+            targets = statement.targets
+        elif isinstance(statement, ast.AnnAssign):
+            targets = [statement.target]
+        else:
+            continue
+        for target in targets:
+            if (
+                isinstance(target, ast.Attribute)
+                and isinstance(target.value, ast.Name)
+                and target.value.id == "self"
+            ):
+                attrs.add(target.attr)
+    return attrs
+
+
+def nested_block_nodes(statement: ast.stmt) -> set[ast.AST]:
+    nested: set[ast.AST] = set()
+    for field in ("body", "orelse", "finalbody", "handlers"):
+        for child in getattr(statement, field, None) or []:
+            nested.update(ast.walk(child))
+    return nested
+
+
+def self_attr_usage_ranges(
+    method: ast.FunctionDef | ast.AsyncFunctionDef | None,
+    attr_names: set[str],
+) -> list[tuple[int, int]]:
+    if method is None or not attr_names:
+        return []
+    ranges: list[tuple[int, int]] = []
+    for statement in method_statements(method):
+        nested = nested_block_nodes(statement)
+        hits = [
+            node
+            for node in ast.walk(statement)
+            if node not in nested
+            and isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "self"
+            and node.attr in attr_names
+        ]
+        if not hits:
+            continue
+        if getattr(statement, "body", None):
+            # Compound statement (for/if/while/with): highlight only the header
+            # references, not the whole nested body.
+            ranges.extend(node_range(node) for node in hits)
+        else:
+            ranges.append(node_range(statement))
+    return merge_ranges(ranges)
+
+
 def add_anchor(
     anchors: list[dict[str, Any]],
     used: dict[str, int],
@@ -574,12 +703,21 @@ def add_anchor(
     role: str,
     label: str,
     line_range: tuple[int, int] | None,
+    usage_ranges: list[tuple[int, int]] | None = None,
 ) -> dict[str, Any] | None:
     if section is None or line_range is None:
         return None
     line_start, line_end = line_range
     if line_start < section["line_start"] or line_end > section["line_end"]:
         return None
+    ranges = [{"kind": "definition", "line_start": line_start, "line_end": line_end}]
+    for usage_start, usage_end in usage_ranges or []:
+        if usage_start < section["line_start"] or usage_end > section["line_end"]:
+            continue
+        if usage_start <= line_end and usage_end >= line_start:
+            continue
+        ranges.append({"kind": "usage", "line_start": usage_start, "line_end": usage_end})
+    ranges.sort(key=lambda item: (item["line_start"], item["line_end"]))
     anchor_id = unique_id(f"{section['id']}.{slugify(role)}", used)
     anchor = {
         "id": anchor_id,
@@ -589,6 +727,7 @@ def add_anchor(
         "line_start": line_start,
         "line_end": line_end,
         "line_count": line_end - line_start + 1,
+        "ranges": ranges,
         "source_preview": source_lines[line_start - 1].strip(),
     }
     anchors.append(anchor)
@@ -606,9 +745,20 @@ def add_anchor_from_matches(
     *,
     all_of: tuple[str, ...] = (),
     any_of: tuple[str, ...] = (),
+    usage_method: ast.FunctionDef | ast.AsyncFunctionDef | None = None,
 ) -> dict[str, Any] | None:
     statements = matching_statements(method, source_lines, all_of=all_of, any_of=any_of)
-    return add_anchor(anchors, used, section, source_lines, role, label, combined_range(statements))
+    usage_ranges = self_attr_usage_ranges(usage_method, assigned_self_attrs(statements))
+    return add_anchor(
+        anchors,
+        used,
+        section,
+        source_lines,
+        role,
+        label,
+        combined_range(statements),
+        usage_ranges=usage_ranges,
+    )
 
 
 def extract_config_defaults(tree: ast.Module) -> dict[str, Any]:
@@ -714,34 +864,42 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
         add_anchor_from_matches(
             anchors, used, model_section, source_lines, "embedding", "Token embedding", model_init,
             any_of=("self.tok_emb =", "self.wte ="),
+            usage_method=model_forward,
         )
         add_anchor_from_matches(
             anchors, used, model_section, source_lines, "position_embedding", "Positional embedding", model_init,
             any_of=("self.wpe =", "pos_emb"),
+            usage_method=model_forward,
         )
         add_anchor_from_matches(
             anchors, used, model_section, source_lines, "embedding_dropout", "Embedding dropout", model_init,
             any_of=("self.drop =",),
+            usage_method=model_forward,
         )
         add_anchor_from_matches(
             anchors, used, model_section, source_lines, "block_stack", "Repeated blocks", model_init,
             any_of=("self.blocks", "ModuleList"),
+            usage_method=model_forward,
         )
         add_anchor_from_matches(
             anchors, used, model_section, source_lines, "output_head", "Final norm + LM head", model_init,
             any_of=("self.lm_head", "self.norm", "self.ln_f"),
+            usage_method=model_forward,
         )
         add_anchor_from_matches(
             anchors, used, model_section, source_lines, "final_norm", "Final normalization", model_init,
             any_of=("self.norm =", "self.ln_f ="),
+            usage_method=model_forward,
         )
         add_anchor_from_matches(
             anchors, used, model_section, source_lines, "lm_head", "Linear output layer", model_init,
             any_of=("self.lm_head =", "self.output =", "self.head ="),
+            usage_method=model_forward,
         )
         add_anchor_from_matches(
             anchors, used, model_section, source_lines, "rope", "RoPE cache", model_init,
             any_of=("precompute_rope", "rope_cos", "rope_sin"),
+            usage_method=model_forward,
         )
         add_anchor_from_matches(
             anchors, used, model_section, source_lines, "block_stack", "Run blocks", model_forward,
@@ -763,6 +921,7 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
                 "self.attention_norm =",
                 "self.norm1 =",
             ),
+            usage_method=block_forward,
         )
         add_anchor_from_matches(
             anchors, used, block_section, source_lines, "norm_2", "Feed-forward norm", block_init,
@@ -773,6 +932,7 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
                 "self.mlp_norm =",
                 "self.norm2 =",
             ),
+            usage_method=block_forward,
         )
         add_anchor_from_matches(
             anchors, used, block_section, source_lines, "parallel", "Parallel attention + FFN", block_forward,
@@ -798,10 +958,12 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "qkv", "Q/K/V projections", init,
                 any_of=("q_proj", "k_proj", "v_proj", "kv_a_proj", "q_a_proj", "c_attn"),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "qk_norm", "QK normalization", init,
                 any_of=("q_norm", "k_norm", "q_a_norm", "kv_a_norm"),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "rope", "Rotary position mix", forward,
@@ -818,22 +980,27 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "output_projection", "Output projection", init,
                 any_of=("o_proj", "out_proj", "c_proj"),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "attention_dropout", "Attention dropout", init,
                 any_of=("attn_dropout", "resid_dropout"),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "sparse_attention", "Sparse attention metadata", init,
                 any_of=("sparse_attention", "sparse_topk", "index_topk", "IndexShare", "DSA"),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "latent_query", "Low-rank query path", init,
                 any_of=("q_a_proj", "q_b_proj"),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "latent_kv", "Latent KV path", init,
                 any_of=("kv_a_proj", "kv_b_proj", "kv_lora"),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "mixer_state", "Mixer state update", forward,
@@ -843,6 +1010,7 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "norm_1", "Layer norm", init,
                 any_of=("self.norm =", "self.attn_norm =", "self.mix_norm ="),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "residual_attn", "Mixer / attention residual", forward,
@@ -856,6 +1024,7 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "mlp_gate", "Gate/up projection", init,
                 any_of=("gate_proj", "up_proj", "c_fc"),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "mlp_output", "Activation + down projection", forward,
@@ -868,11 +1037,13 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "mlp_dropout", "MLP dropout", init,
                 any_of=("self.dropout", "Dropout"),
+                usage_method=forward,
             )
         if role == "moe":
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "router", "Router / gate", init,
                 any_of=("self.gate", "router"),
+                usage_method=forward,
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "topk", "Top-k routing", forward,
@@ -885,6 +1056,7 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "shared_expert", "Shared expert", init,
                 any_of=("shared", "n_shared_experts"),
+                usage_method=forward,
             )
 
     anchors.sort(
@@ -2117,6 +2289,154 @@ def gallery_url_for(entry: registry.Entry, constants: dict[str, Any]) -> str:
     return gallery_card_url(base_url, gallery_card_id)
 
 
+CONCEPT_REQUIRED_FIELDS = ("title", "emoji", "summary")
+CONCEPT_DOLLAR_MARKER = "KATEXDOLLARMARKER"
+CONCEPT_FENCE_RE = re.compile(r"(```.*?```)", re.DOTALL)
+CONCEPT_DISPLAY_MATH_RE = re.compile(r"\$\$(.+?)\$\$", re.DOTALL)
+CONCEPT_INLINE_MATH_RE = re.compile(r"\$([^$\n]+?)\$")
+
+
+def render_concept_body(body: str, path: Path) -> str:
+    """Convert concept markdown to HTML with $...$/$$...$$ preserved for client-side KaTeX.
+
+    Math is extracted before the markdown conversion (so underscores/asterisks inside TeX
+    survive) and re-inserted as .katex-src placeholder elements that web/app.js renders
+    with katex.render(). Fenced code blocks are shielded so a stray $ inside them stays text.
+    """
+    stash: list[tuple[str, bool]] = []
+
+    def stash_math(text: str) -> str:
+        text = text.replace(r"\$", CONCEPT_DOLLAR_MARKER)
+
+        def displaced(match: re.Match[str]) -> str:
+            stash.append((match.group(1).strip(), True))
+            return f"KATEXMATH{len(stash) - 1}MARKER"
+
+        def inlined(match: re.Match[str]) -> str:
+            stash.append((match.group(1).strip(), False))
+            return f"KATEXMATH{len(stash) - 1}MARKER"
+
+        text = CONCEPT_DISPLAY_MATH_RE.sub(displaced, text)
+        text = CONCEPT_INLINE_MATH_RE.sub(inlined, text)
+        if "$" in text:
+            raise ValueError(f"{path.name}: unbalanced $ delimiter (escape literal dollars as \\$)")
+        return text
+
+    parts = CONCEPT_FENCE_RE.split(body)
+    for i in range(0, len(parts), 2):
+        parts[i] = stash_math(parts[i])
+    rendered = markdown.markdown("".join(parts), extensions=["tables", "fenced_code"])
+
+    for i, (tex, display) in enumerate(stash):
+        marker = f"KATEXMATH{i}MARKER"
+        escaped = html.escape(tex, quote=True)
+        if display:
+            element = f'<div class="katex-src" data-display="1" data-tex="{escaped}"></div>'
+            rendered = rendered.replace(f"<p>{marker}</p>", element).replace(marker, element)
+        else:
+            rendered = rendered.replace(marker, f'<span class="katex-src" data-tex="{escaped}"></span>')
+    rendered = rendered.replace(CONCEPT_DOLLAR_MARKER, "$")
+    if "KATEXMATH" in rendered or "KATEXDOLLAR" in rendered:
+        raise ValueError(f"{path.name}: math placeholder leaked into rendered HTML")
+    return rendered
+
+
+def parse_concept_file(path: Path) -> dict[str, Any]:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n") or "\n---\n" not in text[4:]:
+        raise ValueError(f"{path.name}: missing --- frontmatter fences")
+    end = text.index("\n---\n", 4)
+    meta: dict[str, str] = {}
+    for line in text[4:end].splitlines():
+        if not line.strip():
+            continue
+        key, sep, value = line.partition(":")
+        if not sep:
+            raise ValueError(f"{path.name}: bad frontmatter line {line!r}")
+        meta[key.strip()] = value.strip()
+    missing = [field for field in CONCEPT_REQUIRED_FIELDS if not meta.get(field)]
+    if missing:
+        raise ValueError(f"{path.name}: missing frontmatter fields {missing}")
+    related = [item.strip() for item in meta.get("related", "").split(",") if item.strip()]
+    return {
+        "id": path.stem,
+        "title": meta["title"],
+        "emoji": meta["emoji"],
+        "summary": meta["summary"],
+        "related": related,
+        "body_html": render_concept_body(text[end + 5 :], path),
+    }
+
+
+def load_concepts() -> list[dict[str, Any]]:
+    paths = sorted(CONCEPTS_DIR.glob("*.md"))
+    if not paths:
+        raise ValueError(f"no concept files found in {CONCEPTS_DIR}")
+    concepts = [parse_concept_file(path) for path in paths]
+    ids = {concept["id"] for concept in concepts}
+    for concept in concepts:
+        unknown = [rel for rel in concept["related"] if rel not in ids]
+        if unknown:
+            raise ValueError(f"{concept['id']}: unknown related concepts {unknown}")
+    return concepts
+
+
+def resolve_section_concept(section: dict[str, Any], section_anchors: list[dict[str, Any]]) -> str:
+    label = section["label"]
+    if label in SECTION_LABEL_CONCEPTS:
+        return SECTION_LABEL_CONCEPTS[label]
+    role = section["role"]
+    if role == "attention":
+        anchor_roles = {anchor["role"] for anchor in section_anchors}
+        if "latent_kv" in anchor_roles:
+            return "mla"
+        if "kv_share" in anchor_roles:
+            return "gqa"
+        return "attention"
+    if role in SECTION_ROLE_CONCEPTS:
+        return SECTION_ROLE_CONCEPTS[role]
+    raise ValueError(f"no concept mapping for section {section['id']} (role={role}, label={label})")
+
+
+def resolve_anchor_concept(
+    anchor: dict[str, Any],
+    sections: list[dict[str, Any]],
+    section_concepts: dict[str, str],
+) -> str:
+    role = anchor["role"]
+    if role in ("norm_1", "norm_2", "final_norm"):
+        norm = next((s for s in sections if s["role"] == "norm"), None)
+        if norm is None:
+            raise ValueError(f"anchor {anchor['id']} needs a norm section to inherit from")
+        return section_concepts[norm["id"]]
+    if role == "mixer_state":
+        parent = next(s for s in sections if s["id"] == anchor["section_id"])
+        if parent["role"] in ("mixer", "attention"):
+            return section_concepts[parent["id"]]
+        mixer = next((s for s in sections if s["role"] == "mixer"), None)
+        if mixer is None:
+            raise ValueError(f"anchor {anchor['id']} needs a mixer section to inherit from")
+        return section_concepts[mixer["id"]]
+    if role in ("mlp_gate", "mlp_output"):
+        parent = next(s for s in sections if s["id"] == anchor["section_id"])
+        if parent["role"] in ("mlp", "helper"):
+            return section_concepts[parent["id"]]
+        return "glu-feedforward"
+    if role in ANCHOR_ROLE_CONCEPTS:
+        return ANCHOR_ROLE_CONCEPTS[role]
+    raise ValueError(f"no concept mapping for anchor {anchor['id']} (role={role})")
+
+
+def assign_concepts(sections: list[dict[str, Any]], anchors: list[dict[str, Any]]) -> None:
+    section_concepts: dict[str, str] = {}
+    for section in sections:
+        section_anchors = [a for a in anchors if a["section_id"] == section["id"]]
+        section["concept_id"] = resolve_section_concept(section, section_anchors)
+        section_concepts[section["id"]] = section["concept_id"]
+    for anchor in anchors:
+        anchor["concept_id"] = resolve_anchor_concept(anchor, sections, section_concepts)
+
+
 def build_model_payload(entry: registry.Entry, architecture_manifest: dict[str, Any] | None = None) -> dict[str, Any]:
     path = MODELS_DIR / f"{entry.module}.py"
     source = path.read_text(encoding="utf-8")
@@ -2125,6 +2445,7 @@ def build_model_payload(entry: registry.Entry, architecture_manifest: dict[str, 
     constants = literal_constants(tree)
     sections = extract_sections(tree, source_lines)
     anchors = extract_anchors(tree, source_lines, sections)
+    assign_concepts(sections, anchors)
     config = extract_config_defaults(tree)
     template = infer_template(sections, entry.archetype)
     diagram = make_diagram(entry.slug, template, sections, anchors, config)
@@ -2200,10 +2521,25 @@ def data_version_for(models: list[dict[str, Any]]) -> str:
 
 def build_payloads() -> dict[str, Any]:
     architecture_manifest = load_architecture_manifest()
+    concepts = load_concepts()
+    concept_ids = {concept["id"] for concept in concepts}
     models = [build_model_payload(entry, architecture_manifest) for entry in registry.REGISTRY]
-    data_version = data_version_for(models)
+    for payload in models:
+        for target in [*payload["sections"], *payload["anchors"]]:
+            if target["concept_id"] not in concept_ids:
+                raise ValueError(
+                    f"{payload['slug']}: {target['id']} maps to missing concept "
+                    f"{target['concept_id']!r} (add llm_gallery/concepts/{target['concept_id']}.md)"
+                )
+    concepts_payload = {
+        "generated_by": "scripts/build_visualizer_data.py",
+        "concept_count": len(concepts),
+        "concepts": concepts,
+    }
+    data_version = data_version_for([*models, concepts_payload])
     for payload in models:
         payload["data_version"] = data_version
+    concepts_payload["data_version"] = data_version
     index_models = [index_entry(payload) for payload in models]
     return {
         "index.json": {
@@ -2214,6 +2550,7 @@ def build_payloads() -> dict[str, Any]:
             "role_labels": ROLE_LABELS,
             "models": index_models,
         },
+        "concepts.json": concepts_payload,
         **{f"{payload['slug']}.json": payload for payload in models},
     }
 

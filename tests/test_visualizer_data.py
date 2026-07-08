@@ -167,6 +167,17 @@ def test_wave2_assumption_notes_are_exposed(payloads):
         assert any(needle in note["text"] for note in payloads[f"{slug}.json"]["notes"]), slug
 
 
+def test_anchor_usage_ranges_link_definition_to_forward(payloads):
+    payload = payloads["gpt2-xl.json"]
+    source_lines = payload["source_lines"]
+    dropout = next(anchor for anchor in payload["anchors"] if anchor["id"] == "attention.attention-dropout")
+    usages = [item for item in dropout["ranges"] if item["kind"] == "usage"]
+    assert usages
+    for item in usages:
+        used_text = "\n".join(source_lines[item["line_start"] - 1 : item["line_end"]])
+        assert "attn_dropout" in used_text or "resid_dropout" in used_text
+
+
 @pytest.mark.parametrize("entry", registry.REGISTRY, ids=lambda entry: entry.slug)
 def test_model_payload_has_valid_sections(entry, payloads):
     payload = payloads[f"{entry.slug}.json"]
@@ -201,6 +212,19 @@ def test_model_payload_has_valid_sections(entry, payloads):
         assert anchor["line_count"] == anchor["line_end"] - anchor["line_start"] + 1
         parent = next(section for section in sections if section["id"] == anchor["section_id"])
         assert parent["line_start"] <= anchor["line_start"] <= anchor["line_end"] <= parent["line_end"]
+
+        ranges = anchor["ranges"]
+        assert ranges
+        definitions = [item for item in ranges if item["kind"] == "definition"]
+        assert len(definitions) == 1
+        assert definitions[0]["line_start"] == anchor["line_start"]
+        assert definitions[0]["line_end"] == anchor["line_end"]
+        previous_end = parent["line_start"] - 1
+        for item in ranges:
+            assert item["kind"] in {"definition", "usage"}
+            assert item["line_start"] > previous_end
+            assert parent["line_start"] <= item["line_start"] <= item["line_end"] <= parent["line_end"]
+            previous_end = item["line_end"]
 
     target_ids = section_ids | anchor_ids
     generated_target_count = 0
@@ -451,6 +475,43 @@ def test_build_time_highlighting_marks_python_tokens(payloads):
     assert any(token == {"t": "class", "c": "py-keyword"} for token in tokens)
     assert any(token.get("t") == "Config" and token.get("c") == "py-class" for token in tokens)
     assert any(token.get("c") == "py-comment" for token in tokens)
+
+
+def test_concepts_payload_is_valid(payloads):
+    concepts = payloads["concepts.json"]["concepts"]
+    assert payloads["concepts.json"]["concept_count"] == len(concepts)
+    ids = [concept["id"] for concept in concepts]
+    assert len(ids) == len(set(ids))
+    source_files = {path.stem for path in builder.CONCEPTS_DIR.glob("*.md")}
+    assert set(ids) == source_files
+    for concept in concepts:
+        assert concept["title"] and concept["emoji"] and concept["summary"]
+        assert concept["body_html"].strip()
+        assert "$$" not in concept["body_html"]
+        assert "KATEXMATH" not in concept["body_html"]
+        assert 'class="katex-src"' in concept["body_html"], f"{concept['id']} has no equations"
+        for related in concept["related"]:
+            assert related in set(ids), f"{concept['id']} relates to unknown {related}"
+            assert related != concept["id"]
+
+
+@pytest.mark.parametrize("entry", registry.REGISTRY, ids=lambda entry: entry.slug)
+def test_every_target_maps_to_concept(entry, payloads):
+    concept_ids = {concept["id"] for concept in payloads["concepts.json"]["concepts"]}
+    payload = payloads[f"{entry.slug}.json"]
+    for target in [*payload["sections"], *payload["anchors"]]:
+        assert target["concept_id"] in concept_ids, f"{target['id']} -> {target['concept_id']}"
+
+
+def test_every_concept_is_referenced(payloads):
+    used = set()
+    for filename, payload in payloads.items():
+        if filename in ("index.json", "concepts.json"):
+            continue
+        for target in [*payload["sections"], *payload["anchors"]]:
+            used.add(target["concept_id"])
+    all_ids = {concept["id"] for concept in payloads["concepts.json"]["concepts"]}
+    assert used == all_ids, f"orphan concepts: {sorted(all_ids - used)}"
 
 
 def test_committed_visualizer_data_is_current(payloads):

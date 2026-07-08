@@ -11,7 +11,9 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
     />
+    <link rel="stylesheet" href="assets/vendor/katex/katex.min.css" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="assets/vendor/katex/katex.min.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body data-page="viewer">
@@ -60,6 +62,17 @@
           </button>
           <button
             class="viewer-tab"
+            id="learnTab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="learnTabPanel"
+            data-viewer-tab="learn"
+          >
+            Learn
+          </button>
+          <button
+            class="viewer-tab"
             id="reportTab"
             type="button"
             role="tab"
@@ -86,6 +99,26 @@
             <span id="activeRange" aria-live="polite"></span>
           </div>
           <pre class="code-block" tabindex="0"><code id="codeLines"></code></pre>
+        </div>
+        <div class="tab-panel learn-tab-panel" id="learnTabPanel" role="tabpanel" aria-labelledby="learnTab" hidden>
+          <div class="concept-scroll" id="conceptScroll">
+            <nav class="concept-index" id="conceptIndex" aria-label="Concepts in this model"></nav>
+            <article class="concept-card" id="conceptCard">
+              <header class="concept-header">
+                <span class="concept-emoji" id="conceptEmoji"></span>
+                <div class="concept-heading">
+                  <h2 id="conceptTitle"></h2>
+                  <p class="concept-context" id="conceptContext"></p>
+                </div>
+              </header>
+              <p class="concept-summary" id="conceptSummary"></p>
+              <div class="concept-body" id="conceptBody"></div>
+              <footer class="concept-related" id="conceptRelated" hidden></footer>
+            </article>
+          </div>
+          <div class="learn-fallback" id="learnFallback" hidden>
+            <p id="learnFallbackText"></p>
+          </div>
         </div>
         <div class="tab-panel report-tab-panel" id="reportTabPanel" role="tabpanel" aria-labelledby="reportTab" hidden>
           <iframe id="reportFrame" title="Tech report" loading="lazy"></iframe>
