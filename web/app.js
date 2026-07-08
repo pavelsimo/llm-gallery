@@ -260,7 +260,7 @@ function renderViewer(model, index, requestedSection, requestedTarget) {
   $("#viewerSlug").textContent = model.slug;
   $("#viewerName").textContent = model.name;
   $("#sourcePath").textContent = model.source_path;
-  $("#modelFacts").replaceChildren(...modelFactNodes(model));
+  $("#modelFacts").replaceChildren(...modelFactNodes(model, { includeGalleryLink: false }));
   renderRelatedModels(index.models, model);
   window.currentModel = model;
   window.currentIndex = index;
@@ -278,7 +278,8 @@ function renderViewer(model, index, requestedSection, requestedTarget) {
   if (initial) activateTarget(model, initial.id, { scroll: Boolean(requested), updateUrl: false });
 }
 
-function modelFactNodes(model) {
+function modelFactNodes(model, options = {}) {
+  const { includeGalleryLink = true } = options;
   const facts = [];
   facts.push(el("p", "fact-line", model.archetype));
   if (model.release) facts.push(el("p", "fact-meta", `Released ${model.release}`));
@@ -289,7 +290,7 @@ function modelFactNodes(model) {
 
   const links = el("div", "fact-links");
   const gallery = galleryHref(model);
-  if (gallery) links.append(link("Gallery", gallery));
+  if (includeGalleryLink && gallery) links.append(link("Gallery", gallery));
   if (links.childElementCount) facts.push(links);
   return facts;
 }
@@ -339,11 +340,47 @@ function embeddableReportUrl(rawUrl) {
 function setupViewerTabs(model) {
   const codePanel = $("#codeTabPanel");
   const reportPanel = $("#reportTabPanel");
+  const galleryPanel = $("#galleryTabPanel");
   const reportFrame = $("#reportFrame");
   const fallback = $("#reportFallback");
   const fallbackText = $("#reportFallbackText");
   const openLink = $("#reportOpenLink");
-  if (!codePanel || !reportPanel) return;
+  const galleryArtworkWrap = $("#galleryArtworkWrap");
+  const galleryArtwork = $("#galleryArtwork");
+  const galleryFallback = $("#galleryFallback");
+  const galleryFallbackText = $("#galleryFallbackText");
+  const gallerySourceLink = $("#gallerySourceLink");
+  if (!codePanel || !reportPanel || !galleryPanel) return;
+
+  const galleryUrl = galleryHref(model);
+  if (gallerySourceLink) {
+    gallerySourceLink.hidden = !galleryUrl;
+    if (galleryUrl) {
+      gallerySourceLink.href = galleryUrl;
+    } else {
+      gallerySourceLink.removeAttribute("href");
+    }
+  }
+
+  const artwork = model.diagram?.artwork;
+  if (galleryArtwork && galleryFallback && galleryFallbackText) {
+    if (artwork?.path) {
+      galleryArtwork.src = artwork.path;
+      galleryArtwork.alt = artwork.source_alt || `${model.name} architecture gallery artwork`;
+      galleryArtwork.title = artwork.source_title || model.name;
+      galleryArtwork.hidden = false;
+      if (galleryArtworkWrap) galleryArtworkWrap.hidden = false;
+      galleryFallback.hidden = true;
+    } else {
+      galleryArtwork.removeAttribute("src");
+      galleryArtwork.removeAttribute("title");
+      galleryArtwork.alt = "";
+      galleryArtwork.hidden = true;
+      if (galleryArtworkWrap) galleryArtworkWrap.hidden = true;
+      galleryFallbackText.textContent = "No gallery artwork is available for this model.";
+      galleryFallback.hidden = false;
+    }
+  }
 
   const originalReportUrl = model.links?.tech_report || "";
   const embedUrl = embeddableReportUrl(originalReportUrl);
@@ -363,20 +400,27 @@ function setupViewerTabs(model) {
   }
 
   const storageKey = `${VIEWER_TAB_STORAGE_PREFIX}${model.slug}`;
-  const storedTab = localStorage.getItem(storageKey) === "report" ? "report" : "code";
+  const panelsByTab = {
+    code: codePanel,
+    report: reportPanel,
+    gallery: galleryPanel,
+  };
+  const storedTabName = localStorage.getItem(storageKey);
+  const storedTab = panelsByTab[storedTabName] ? storedTabName : "code";
 
   function setActiveTab(tabName, persist = true) {
-    const active = tabName === "report" ? "report" : "code";
+    const active = panelsByTab[tabName] ? tabName : "code";
     document.querySelectorAll("[data-viewer-tab]").forEach((tab) => {
       const selected = tab.dataset.viewerTab === active;
       tab.classList.toggle("active", selected);
       tab.setAttribute("aria-selected", String(selected));
       tab.tabIndex = selected ? 0 : -1;
     });
-    codePanel.hidden = active !== "code";
-    reportPanel.hidden = active !== "report";
-    codePanel.classList.toggle("active", active === "code");
-    reportPanel.classList.toggle("active", active === "report");
+    for (const [tabName, panel] of Object.entries(panelsByTab)) {
+      const selected = tabName === active;
+      panel.hidden = !selected;
+      panel.classList.toggle("active", selected);
+    }
     if (persist) localStorage.setItem(storageKey, active);
   }
 
@@ -385,9 +429,13 @@ function setupViewerTabs(model) {
     tab.addEventListener("keydown", (event) => {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       event.preventDefault();
-      const next = tab.dataset.viewerTab === "code" ? "report" : "code";
-      setActiveTab(next);
-      document.querySelector(`[data-viewer-tab="${next}"]`)?.focus();
+      const tabs = [...document.querySelectorAll("[data-viewer-tab]")].filter((candidate) => !candidate.hidden);
+      const index = tabs.indexOf(tab);
+      if (index < 0) return;
+      const direction = event.key === "ArrowRight" ? 1 : -1;
+      const next = tabs[(index + direction + tabs.length) % tabs.length];
+      setActiveTab(next.dataset.viewerTab);
+      next.focus();
     });
   });
 
@@ -489,13 +537,6 @@ function setupViewerActions(model, index) {
     compareLink.href = `compare.html?left=${encodeURIComponent(model.slug)}&right=${encodeURIComponent(next.slug)}`;
   }
 
-  $("#copyActiveLink")?.addEventListener("click", () => copyText(window.location.href));
-  $("#copySection")?.addEventListener("click", () => {
-    const target = resolveTarget(model, window.currentTargetId);
-    if (target) copyText(linesForRange(model, target.line_start, target.line_end));
-  });
-  $("#copyCode")?.addEventListener("click", () => copyText(model.source_lines.join("\n")));
-
   document.addEventListener("keydown", function shortcutListener(event) {
     handleViewerShortcut(event, model, index);
   });
@@ -520,8 +561,6 @@ function handleViewerShortcut(event, model, index) {
   } else if (event.key === "j" || event.key === "k") {
     event.preventDefault();
     activateAdjacentSection(model, event.key === "j" ? 1 : -1);
-  } else if (event.key.toLowerCase() === "c") {
-    copyText(window.location.href);
   }
 }
 
@@ -532,25 +571,6 @@ function activateAdjacentSection(model, direction) {
   if (index < 0) return;
   const next = model.sections[(index + direction + model.sections.length) % model.sections.length];
   activateTarget(model, next.id);
-}
-
-function linesForRange(model, start, end) {
-  return model.source_lines.slice(start - 1, end).join("\n");
-}
-
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const area = el("textarea");
-    area.value = text;
-    area.style.position = "fixed";
-    area.style.opacity = "0";
-    document.body.append(area);
-    area.select();
-    document.execCommand("copy");
-    area.remove();
-  }
 }
 
 function renderDiagram(model, wrap = $("#diagramWrap")) {

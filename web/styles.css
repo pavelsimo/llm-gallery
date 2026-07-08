@@ -193,8 +193,7 @@ select:focus-visible,
 }
 
 .header-actions,
-.viewer-controls,
-.copy-actions {
+.viewer-controls {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -227,9 +226,11 @@ select:focus-visible,
 }
 
 .header-link-icon {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 14px;
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  flex: 0 0 18px;
 }
 
 .header-link:hover,
@@ -284,7 +285,7 @@ select:focus-visible,
 }
 
 .hero-attribution {
-  margin: -4px 0 18px;
+  margin: -4px 0 0;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
@@ -300,14 +301,6 @@ select:focus-visible,
 .hero-attribution a:hover {
   color: var(--text);
   text-decoration-color: currentColor;
-}
-
-.hero-lead {
-  max-width: 58ch;
-  margin: 0;
-  color: var(--text-soft);
-  font-size: 15px;
-  line-height: 1.65;
 }
 
 .toolbar {
@@ -989,29 +982,9 @@ marker path {
   border-bottom: 1px solid var(--code-border);
 }
 
-.terminal-bar .dot {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #3a3331;
-  border: 1px solid #15110f;
-}
-
-.terminal-bar .dot.r {
-  background: #ff5f57;
-}
-
-.terminal-bar .dot.y {
-  background: #febc2e;
-}
-
-.terminal-bar .dot.g {
-  background: #28c840;
-}
-
 .terminal-bar .title {
   overflow: hidden;
-  margin-left: 12px;
+  margin-left: 0;
   color: var(--code-muted);
   font-size: 11px;
   letter-spacing: 0.16em;
@@ -1022,6 +995,7 @@ marker path {
 
 .viewer-tabs {
   display: flex;
+  flex-wrap: wrap;
   flex: 0 0 auto;
   gap: 6px;
   padding: 8px 10px;
@@ -1030,6 +1004,9 @@ marker path {
 }
 
 .viewer-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 30px;
   padding: 0 12px;
   border: 1px solid transparent;
@@ -1040,6 +1017,8 @@ marker path {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.14em;
+  line-height: 1;
+  text-decoration: none;
   text-transform: uppercase;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -1056,7 +1035,8 @@ marker path {
 }
 
 .code-tab-panel,
-.report-tab-panel {
+.report-tab-panel,
+.gallery-tab-panel {
   flex: 1 1 auto;
 }
 
@@ -1070,6 +1050,13 @@ marker path {
   background: var(--code-bg);
 }
 
+.gallery-tab-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--code-bg);
+}
+
 .report-tab-panel iframe {
   display: block;
   width: 100%;
@@ -1078,7 +1065,8 @@ marker path {
   background: #ffffff;
 }
 
-.report-fallback {
+.report-fallback,
+.gallery-fallback {
   display: grid;
   place-content: center;
   gap: 14px;
@@ -1087,7 +1075,8 @@ marker path {
   text-align: center;
 }
 
-.report-fallback p {
+.report-fallback p,
+.gallery-fallback p {
   max-width: 42ch;
   margin: 0;
   color: var(--code-muted);
@@ -1095,7 +1084,8 @@ marker path {
   line-height: 1.6;
 }
 
-.report-fallback a {
+.report-fallback a,
+.gallery-source-link {
   justify-self: center;
   color: var(--accent-dark);
   font-size: 12px;
@@ -1105,15 +1095,46 @@ marker path {
   text-transform: uppercase;
 }
 
-.report-fallback a:hover {
+.report-fallback a:hover,
+.gallery-source-link:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.gallery-artwork-wrap {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  place-items: center;
+  padding: 18px;
+}
+
+.gallery-artwork-wrap img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.gallery-fallback {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+.gallery-source-link {
+  flex: 0 0 auto;
+  padding: 12px 14px;
+  border-top: 1px solid var(--code-border);
+  background: color-mix(in srgb, var(--code-toolbar-bg) 55%, var(--code-bg));
+  text-align: center;
 }
 
 .code-toolbar {
   flex: 0 0 auto;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   align-items: center;
   padding: 10px 14px;
@@ -1123,29 +1144,14 @@ marker path {
   font-size: 12px;
 }
 
-.copy-actions button {
-  height: 30px;
-  padding: 0 12px;
-  border: 1px solid var(--code-border);
-  border-radius: 6px;
-  background: var(--surface-2);
-  color: var(--code-text);
-  cursor: pointer;
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-}
-
-.copy-actions button:hover {
-  background: var(--surface);
-  border-color: var(--accent-dark);
-  transform: scale(1.04);
-}
-
 #activeRange {
+  display: block;
+  min-width: 0;
   color: var(--code-amber);
   font-size: 11px;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1406,10 +1412,6 @@ marker path {
   .code-toolbar {
     flex-wrap: wrap;
     gap: 10px;
-  }
-
-  .copy-actions {
-    flex-wrap: wrap;
   }
 
   .viewer-title h1 {

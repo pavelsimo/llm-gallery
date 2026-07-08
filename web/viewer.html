@@ -44,9 +44,6 @@
       </aside>
       <section class="code-pane" aria-label="Source code">
         <div class="terminal-bar">
-          <span class="dot r"></span>
-          <span class="dot y"></span>
-          <span class="dot g"></span>
           <span class="title" id="sourcePath"></span>
         </div>
         <div class="viewer-tabs" role="tablist" aria-label="Model resources">
@@ -72,14 +69,20 @@
           >
             Tech Report
           </button>
+          <button
+            class="viewer-tab"
+            id="galleryTab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="galleryTabPanel"
+            data-viewer-tab="gallery"
+          >
+            Gallery
+          </button>
         </div>
         <div class="tab-panel code-tab-panel" id="codeTabPanel" role="tabpanel" aria-labelledby="codeTab">
           <div class="code-toolbar">
-            <div class="copy-actions" aria-label="Copy actions">
-              <button type="button" id="copyActiveLink" title="Copy link to active block">Link</button>
-              <button type="button" id="copySection" title="Copy active section code">Section</button>
-              <button type="button" id="copyCode" title="Copy full source">Code</button>
-            </div>
             <span id="activeRange" aria-live="polite"></span>
           </div>
           <pre class="code-block" tabindex="0"><code id="codeLines"></code></pre>
@@ -90,6 +93,17 @@
             <p id="reportFallbackText"></p>
             <a id="reportOpenLink" href="#" target="_blank" rel="noreferrer">Open report</a>
           </div>
+        </div>
+        <div class="tab-panel gallery-tab-panel" id="galleryTabPanel" role="tabpanel" aria-labelledby="galleryTab" hidden>
+          <div class="gallery-artwork-wrap" id="galleryArtworkWrap">
+            <img id="galleryArtwork" alt="" loading="lazy" />
+          </div>
+          <div class="gallery-fallback" id="galleryFallback" hidden>
+            <p id="galleryFallbackText"></p>
+          </div>
+          <a class="gallery-source-link" id="gallerySourceLink" href="#" target="_blank" rel="noreferrer">
+            Open source
+          </a>
         </div>
       </section>
     </main>

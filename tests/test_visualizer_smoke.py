@@ -46,7 +46,61 @@ def test_viewer_diagram_code_roundtrip():
         browser = launch_chromium(playwright)
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         try:
+            page.goto(f"{base_url}/index.html", wait_until="networkidle")
+            assert page.locator("text=Every architecture in the gallery").count() == 0
+            github_icon = page.locator(".header-link-icon")
+            expect(github_icon).to_be_visible()
+            github_icon_box = github_icon.bounding_box()
+            assert github_icon_box is not None
+            assert github_icon_box["width"] <= 24
+            assert github_icon_box["height"] <= 24
+
             page.goto(f"{base_url}/viewer.html?model=llama3-8b", wait_until="networkidle")
+            assert page.locator(".terminal-bar .dot").count() == 0
+            assert page.locator("#copyActiveLink").count() == 0
+            assert page.locator("#copySection").count() == 0
+            assert page.locator("#copyCode").count() == 0
+            gallery_tab = page.locator("#galleryTab")
+            expect(gallery_tab).to_be_visible()
+            assert gallery_tab.get_attribute("href") is None
+            assert gallery_tab.get_attribute("target") is None
+            expect(page.locator("#galleryTabPanel")).to_be_hidden()
+
+            popups = []
+            page.on("popup", lambda popup: popups.append(popup))
+            viewer_url = page.url
+            gallery_tab.click()
+            page.wait_for_timeout(100)
+            assert popups == []
+            assert page.url == viewer_url
+            expect(page.locator("#galleryTab")).to_have_attribute("aria-selected", "true")
+            expect(page.locator("#galleryTabPanel")).to_be_visible()
+            expect(page.locator("#codeTabPanel")).to_be_hidden()
+            expect(page.locator("#reportTabPanel")).to_be_hidden()
+            expect(page.locator("#galleryArtwork")).to_be_visible()
+            assert "assets/architectures/llama3-8b.svg" in (page.locator("#galleryArtwork").get_attribute("src") or "")
+            gallery_source = page.locator("#gallerySourceLink")
+            expect(gallery_source).to_be_visible()
+            gallery_source_href = gallery_source.get_attribute("href")
+            assert gallery_source_href is not None
+            assert gallery_source_href.startswith("https://")
+
+            page.locator("#reportTab").click()
+            expect(page.locator("#reportTabPanel")).to_be_visible()
+            expect(page.locator("#galleryTabPanel")).to_be_hidden()
+
+            page.locator("#codeTab").click()
+            expect(page.locator("#codeTabPanel")).to_be_visible()
+            expect(page.locator("#reportTabPanel")).to_be_hidden()
+            expect(page.locator("#galleryTabPanel")).to_be_hidden()
+            page.locator("#codeTab").focus()
+            page.keyboard.press("ArrowRight")
+            expect(page.locator("#reportTabPanel")).to_be_visible()
+            page.keyboard.press("ArrowRight")
+            expect(page.locator("#galleryTabPanel")).to_be_visible()
+            page.keyboard.press("ArrowLeft")
+            expect(page.locator("#reportTabPanel")).to_be_visible()
+            page.locator("#codeTab").click()
 
             expect(page.locator(".diagram-artwork-image")).to_be_visible()
             assert page.locator(".diagram-hotspot").count() > 0
