@@ -218,6 +218,20 @@ select:focus-visible,
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
+.header-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  line-height: 1;
+}
+
+.header-link-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+
 .header-link:hover,
 .back-link:hover,
 .nav-button:hover {
@@ -267,6 +281,25 @@ select:focus-visible,
   color: var(--accent-dark);
   font-style: italic;
   font-weight: 600;
+}
+
+.hero-attribution {
+  margin: -4px 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hero-attribution a {
+  color: var(--text-soft);
+  text-decoration-color: color-mix(in srgb, var(--text-soft) 55%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.hero-attribution a:hover {
+  color: var(--text);
+  text-decoration-color: currentColor;
 }
 
 .hero-lead {
