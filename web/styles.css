@@ -25,7 +25,10 @@
   --shadow-sm: none;
   --radius: 10px;
   --radius-sm: 8px;
-  --header-offset: 88px;
+  --header-margin: 14px;
+  --header-gap: 18px;
+  --header-height: 56px;
+  --header-offset: calc(var(--header-margin) + var(--header-height) + var(--header-gap));
   --diagram-bg: #141c2c;
   --diagram-pane-bg: transparent;
   --diagram-stroke: #dbe6f3;
@@ -129,14 +132,15 @@ select:focus-visible,
 .site-header,
 .viewer-header {
   position: sticky;
-  top: 14px;
+  top: var(--header-margin);
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  width: min(1320px, calc(100% - 28px));
-  margin: 14px auto 0;
+  width: calc(100% - (var(--header-margin) * 2));
+  min-height: var(--header-height);
+  margin: var(--header-margin) auto 0;
   padding: 10px 16px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -484,7 +488,7 @@ select {
   display: grid;
   grid-template-columns: minmax(0, 56vw) minmax(0, 1fr);
   gap: 18px;
-  padding: 18px clamp(14px, 2vw, 24px) 40px;
+  padding: var(--header-gap) clamp(14px, 2vw, 24px) 40px;
   min-height: calc(100vh - var(--header-offset));
 }
 
@@ -492,7 +496,7 @@ select {
   position: sticky;
   top: var(--header-offset);
   align-self: start;
-  height: calc(100vh - var(--header-offset) - 18px);
+  height: calc(100vh - var(--header-offset) - var(--header-gap));
   overflow: auto;
   padding: 2px;
   background: var(--diagram-pane-bg);
@@ -963,7 +967,7 @@ marker path {
   position: sticky;
   top: var(--header-offset);
   align-self: start;
-  height: calc(100vh - var(--header-offset) - 18px);
+  height: calc(100vh - var(--header-offset) - var(--header-gap));
   min-height: 360px;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -1141,6 +1145,10 @@ marker path {
 }
 
 .concept-scroll {
+  display: grid;
+  grid-template-columns: clamp(190px, 28%, 280px) minmax(0, 1fr);
+  align-content: start;
+  gap: 20px 24px;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -1149,18 +1157,26 @@ marker path {
 
 .concept-index {
   display: flex;
-  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  flex-direction: column;
+  flex-wrap: nowrap;
   gap: 6px;
-  max-width: 72ch;
-  margin: 0 auto 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--code-border);
+  width: 100%;
+  max-height: calc(100vh - var(--header-offset) - 160px);
+  max-width: none;
+  margin: 0;
+  padding: 0 18px 0 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--code-border);
 }
 
 .concept-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   padding: 5px 11px;
   border: 1px solid var(--code-border);
   border-radius: 999px;
@@ -1170,6 +1186,18 @@ marker path {
   font: inherit;
   font-size: 11px;
   transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.concept-index .concept-chip {
+  width: 100%;
+  justify-content: flex-start;
+  line-height: 1.25;
+  text-align: left;
+  white-space: normal;
+}
+
+.concept-chip-label {
+  min-width: 0;
 }
 
 .concept-chip:hover {
@@ -1183,8 +1211,9 @@ marker path {
 }
 
 .concept-card {
-  max-width: 72ch;
-  margin: 0 auto;
+  width: min(100%, 84ch);
+  max-width: 100%;
+  margin: 0 auto 0 0;
   color: var(--code-text);
   font-size: 14px;
   line-height: 1.7;
@@ -1561,6 +1590,34 @@ marker path {
 @media (max-width: 1280px) {
   .viewer-shell {
     grid-template-columns: 1fr;
+  }
+
+  .concept-scroll {
+    display: block;
+  }
+
+  .concept-index {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: none;
+    max-width: 72ch;
+    margin: 0 auto 20px;
+    padding: 0 0 16px;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--code-border);
+  }
+
+  .concept-index .concept-chip {
+    width: auto;
+    white-space: normal;
+  }
+
+  .concept-card {
+    width: auto;
+    max-width: 72ch;
+    margin: 0 auto;
   }
 
   .diagram-pane {
