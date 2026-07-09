@@ -1028,11 +1028,11 @@ def extract_anchors(tree: ast.Module, source_lines: list[str], sections: list[di
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "mlp_output", "Activation + down projection", forward,
-                any_of=("silu", "gelu", "down_proj", "c_proj"),
+                any_of=("silu", "gelu", "relu", "sigmoid", "down_proj", "c_proj"),
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "activation", "Activation", forward,
-                any_of=("silu", "gelu", "GELU", "act("),
+                any_of=("silu", "gelu", "GELU", "relu", "sigmoid", "act("),
             )
             add_anchor_from_matches(
                 anchors, used, section, source_lines, "mlp_dropout", "MLP dropout", init,

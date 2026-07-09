@@ -199,15 +199,12 @@ class Model(nn.Module):
         if cfg.tie_embeddings:
             self.lm_head.weight = self.tok_emb.weight
 
-        # Precompute RoPE tables and the causal mask once (not saved in checkpoints).
+        # Precompute RoPE tables once (not saved in checkpoints). The causal mask is built per
+        # forward pass for the actual sequence length instead of a context_length^2 buffer.
         head_dim = cfg.n_embd // cfg.n_head
         cos, sin = precompute_rope(head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )  # True above the diagonal = "future", which we mask out
-        self.register_buffer("causal_mask", causal, persistent=False)
 
         self.apply(self._init_weights)
 
@@ -222,8 +219,10 @@ class Model(nn.Module):
         assert t <= self.config.context_length
         x = self.tok_emb(idx)  # [B, T, C]
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        # True above the diagonal = "future", which we mask out.
+        mask = torch.triu(torch.ones(t, t, dtype=torch.bool, device=idx.device), diagonal=1)
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            x = block(x, cos, sin, mask)
         x = self.norm(x)
         return self.lm_head(x)
 

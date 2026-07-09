@@ -44,7 +44,7 @@ TECH_REPORT_URL = "https://arxiv.org/pdf/2503.19786"
 @dataclass
 class Config:
     vocab_size: int = 262208
-    context_length: int = 128000
+    context_length: int = 131072
     n_layer: int = 62
     n_head: int = 32
     n_kv_head: int = 16
@@ -205,14 +205,6 @@ class Model(nn.Module):
         self.register_buffer("rope_sin_global", sg, persistent=False)
         self.register_buffer("rope_cos_local", cl, persistent=False)
         self.register_buffer("rope_sin_local", sl, persistent=False)
-
-        # Two masks: a full causal mask (global) and a sliding-window causal mask (local).
-        n = cfg.context_length
-        ar = torch.arange(n)
-        future = ar[None, :] > ar[:, None]
-        too_far = (ar[:, None] - ar[None, :]) >= cfg.sliding_window
-        self.register_buffer("mask_global", future, persistent=False)
-        self.register_buffer("mask_local", future | too_far, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -221,12 +213,19 @@ class Model(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         b, t = idx.shape
+        assert t <= self.config.context_length
         x = self.tok_emb(idx) * self.embed_scale
+        # Two masks: a full causal mask (global) and a sliding-window causal mask (local).
+        ar = torch.arange(t, device=idx.device)
+        future = ar[None, :] > ar[:, None]
+        too_far = (ar[:, None] - ar[None, :]) >= self.config.sliding_window
+        mask_global = future
+        mask_local = future | too_far
         for block in self.blocks:
             if block.is_global:
-                cos, sin, mask = self.rope_cos_global[:t], self.rope_sin_global[:t], self.mask_global
+                cos, sin, mask = self.rope_cos_global[:t], self.rope_sin_global[:t], mask_global
             else:
-                cos, sin, mask = self.rope_cos_local[:t], self.rope_sin_local[:t], self.mask_local
+                cos, sin, mask = self.rope_cos_local[:t], self.rope_sin_local[:t], mask_local
             x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 

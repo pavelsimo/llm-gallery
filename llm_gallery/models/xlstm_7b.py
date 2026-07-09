@@ -11,10 +11,13 @@ gated over time. Reading the memory with the current query gives the output:
 
 Because it's a recurrence, position is implicit (no RoPE, no positional embeddings). This file
 implements the recurrence **sequentially over time** for clarity — easy to read and obviously causal.
-The real xLSTM uses a chunked parallel scan for speed, and also interleaves sLSTM blocks and a small
-causal conv; those are omitted here. The input/forget gates use the paper's stabilized exponential
-form: a per-head running max ``m`` keeps ``exp(i_tilde)`` and ``exp(f_tilde)`` numerically bounded
-while still allowing input writes stronger than a sigmoid gate.
+The real xLSTM-7B uses a chunked parallel scan for speed (the original xLSTM paper additionally
+interleaved sLSTM blocks and a small causal conv; the 7B release dropped both). Matching the released
+7B: q/k are projected at half width (``qk_dim_factor 0.5``, making the memory ``C`` rectangular),
+gate preactivations are soft-capped at 15, and a per-head RMSNorm is applied to the memory read-out
+before the output gate. The input/forget gates use the paper's stabilized exponential form: a
+per-head running max ``m`` keeps ``exp(i_tilde)`` and ``exp(f_tilde)`` numerically bounded while
+still allowing input writes stronger than a sigmoid gate.
 
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (xLSTM)
 Tech report: https://arxiv.org/abs/2503.13427
@@ -47,7 +50,9 @@ class Config:
     n_layer: int = 32
     n_embd: int = 4096
     n_head: int = 8
-    intermediate_size: int = 11008
+    qk_dim_factor: float = 0.5  # q/k width relative to n_embd (v stays full width)
+    gate_soft_cap: float = 15.0  # input/forget gate preactivations are soft-capped
+    intermediate_size: int = 10944  # ffn_proj_factor 2.667 * 4096, rounded up to a multiple of 64
     norm_eps: float = 1e-6
     tie_embeddings: bool = False
 
@@ -85,26 +90,30 @@ class mLSTM(nn.Module):
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_head = cfg.n_head
-        self.head_dim = cfg.n_embd // cfg.n_head
-        self.q_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
-        self.k_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
+        self.head_dim = cfg.n_embd // cfg.n_head  # value / read-out head width
+        self.qk_head_dim = int(cfg.n_embd * cfg.qk_dim_factor) // cfg.n_head  # q/k at half width
+        self.gate_soft_cap = cfg.gate_soft_cap
+        self.q_proj = nn.Linear(cfg.n_embd, int(cfg.n_embd * cfg.qk_dim_factor), bias=False)
+        self.k_proj = nn.Linear(cfg.n_embd, int(cfg.n_embd * cfg.qk_dim_factor), bias=False)
         self.v_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
         self.i_gate = nn.Linear(cfg.n_embd, cfg.n_head)  # input gate (one scalar per head)
         self.f_gate = nn.Linear(cfg.n_embd, cfg.n_head)  # forget gate
         self.o_gate = nn.Linear(cfg.n_embd, cfg.n_embd)  # output gate (per channel)
+        self.out_norm = RMSNorm(self.head_dim, cfg.norm_eps)  # per-head norm on the read-out
         self.out_proj = nn.Linear(cfg.n_embd, cfg.n_embd, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, t, d = x.shape
-        nh, hd = self.n_head, self.head_dim
-        q = self.q_proj(x).view(b, t, nh, hd)
-        k = self.k_proj(x).view(b, t, nh, hd) / math.sqrt(hd)  # scale keys
+        nh, hd, qk = self.n_head, self.head_dim, self.qk_head_dim
+        q = self.q_proj(x).view(b, t, nh, qk)
+        k = self.k_proj(x).view(b, t, nh, qk) / math.sqrt(qk)  # scale keys
         v = self.v_proj(x).view(b, t, nh, hd)
-        i_tilde = self.i_gate(x)  # [B, T, nh], stabilized-exp input preactivation
-        f_tilde = self.f_gate(x)  # [B, T, nh], stabilized-exp forget preactivation
+        cap = self.gate_soft_cap
+        i_tilde = cap * torch.tanh(self.i_gate(x) / cap)  # soft-capped exp-gate preactivation
+        f_tilde = cap * torch.tanh(self.f_gate(x) / cap)
 
-        c = x.new_zeros(b, nh, hd, hd)  # matrix memory per head
-        n = x.new_zeros(b, nh, hd)  # normalizer state
+        c = x.new_zeros(b, nh, hd, qk)  # rectangular matrix memory per head: value_dim x key_dim
+        n = x.new_zeros(b, nh, qk)  # normalizer state
         m = x.new_full((b, nh), float("-inf"))  # running max stabilizer for exp gates
         outputs = []
         for s in range(t):
@@ -112,15 +121,15 @@ class mLSTM(nn.Module):
             i_s = torch.exp(i_tilde[:, s] - m_new).view(b, nh, 1, 1)
             f_s = torch.exp(f_tilde[:, s] + m - m_new).view(b, nh, 1, 1)
             m = m_new
-            k_s, v_s, q_s = k[:, s], v[:, s], q[:, s]  # each [B, nh, hd]
+            k_s, v_s, q_s = k[:, s], v[:, s], q[:, s]  # k/q: [B, nh, qk], v: [B, nh, hd]
             c = f_s * c + i_s * (v_s.unsqueeze(-1) @ k_s.unsqueeze(-2))  # write outer product
             n = f_s.view(b, nh, 1) * n + i_s.view(b, nh, 1) * k_s
             num = (c @ q_s.unsqueeze(-1)).squeeze(-1)  # [B, nh, hd] read memory with query
             denom = (n * q_s).sum(-1, keepdim=True).abs().clamp(min=1.0)
             outputs.append(num / denom)
 
-        h = torch.stack(outputs, dim=1).reshape(b, t, d)  # [B, T, D]
-        h = torch.sigmoid(self.o_gate(x)) * h  # output gate
+        h = self.out_norm(torch.stack(outputs, dim=1))  # [B, T, nh, hd], per-head norm
+        h = torch.sigmoid(self.o_gate(x)) * h.reshape(b, t, d)  # output gate
         return self.out_proj(h)
 
 

@@ -200,6 +200,8 @@ class Config:
     moe_intermediate_size: int = {moe_inter}
     sliding_window: int = {window}
     rope_theta: float = {theta}
+    swiglu_alpha: float = 1.702  # clamped-SwiGLU gate sharpness ("swiglu_oai")
+    swiglu_limit: float = 7.0  # clamp bound on the gate/up activations
     norm_eps: float = {eps}
     tie_embeddings: bool = False
 
@@ -266,15 +268,18 @@ class Config:
     head_dim: int = {head_dim}
     rope_theta: float = {theta}
     layer_pattern: str = "{layer_pattern}"
-    mamba_expand: int = {mamba_expand}
+    mamba_n_heads: int = {mamba_n_heads}
+    mamba_head_dim: int = {mamba_head_dim}
+    mamba_n_groups: int = {mamba_n_groups}
     mamba_d_state: int = {d_state}
     mamba_d_conv: int = {d_conv}
-    mamba_dt_rank: int = {dt_rank}
     use_moe: bool = {use_moe}
     n_experts: int = {n_experts}
     n_experts_per_tok: int = {top_k}
     moe_intermediate_size: int = {moe_inter}
     n_shared_experts: int = {n_shared}
+    shared_expert_intermediate_size: int = {shared_inter}
+    routed_scaling_factor: float = {scaling}
     intermediate_size: int = {inter}
     norm_eps: float = {eps}
     tie_embeddings: bool = {tie}
@@ -283,9 +288,10 @@ class Config:
 PRESETS: dict[str, Config] = {{
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=6, n_embd=128, n_head=4, n_kv_head=2,
-        head_dim=32, rope_theta=10000.0, layer_pattern="ME*MEM", mamba_expand=2,
-        mamba_d_state=8, mamba_d_conv=4, mamba_dt_rank=16, use_moe={use_moe}, n_experts=8,
-        n_experts_per_tok=2, moe_intermediate_size=128, n_shared_experts=1, intermediate_size=256,
+        head_dim=32, rope_theta=10000.0, layer_pattern="ME*MEM", mamba_n_heads=4,
+        mamba_head_dim=32, mamba_n_groups=2, mamba_d_state=8, mamba_d_conv=4, use_moe={use_moe},
+        n_experts=8, n_experts_per_tok=2, moe_intermediate_size=128, n_shared_experts=1,
+        shared_expert_intermediate_size=256, routed_scaling_factor=1.0, intermediate_size=256,
     ),
     "{slug}": Config(),
 }}
@@ -346,6 +352,9 @@ class Config:
     n_experts_per_tok: int = {top_k}
     moe_intermediate_size: int = {moe_inter}
     n_shared_experts: int = {n_shared}
+    first_k_dense: int = {first_k_dense}
+    intermediate_size: int = {inter}
+    routed_scaling_factor: float = {scaling}
     norm_eps: float = {eps}
     tie_embeddings: bool = {tie}
 
@@ -354,7 +363,8 @@ PRESETS: dict[str, Config] = {{
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=6, n_embd=128, linear_n_head=4, n_head=4,
         n_kv_head=2, head_dim=32, rope_theta=10000.0, attn_every=3, n_experts=8,
-        n_experts_per_tok=2, moe_intermediate_size=128, n_shared_experts=1,
+        n_experts_per_tok=2, moe_intermediate_size=128, n_shared_experts=1, first_k_dense=1,
+        intermediate_size=256, routed_scaling_factor=1.0,
     ),
     "{slug}": Config(),
 }}
@@ -1327,15 +1337,18 @@ SPECS = [
         head_dim=128,
         theta="1000000.0",
         attn_every=6,
-        mamba_expand=2,
+        mamba_n_heads=128,
+        mamba_head_dim=64,
+        mamba_n_groups=8,
         d_state=128,
         d_conv=4,
-        dt_rank=96,
         use_moe="True",
         n_experts=128,
         top_k=8,
         moe_inter=1536,
         n_shared=1,
+        shared_inter=5376,
+        scaling=5.0,
         inter=18432,
         eps="1e-5",
         tie="False",
@@ -1357,15 +1370,18 @@ SPECS = [
         head_dim=128,
         theta="1000000.0",
         attn_every=6,
-        mamba_expand=2,
+        mamba_n_heads=256,
+        mamba_head_dim=64,
+        mamba_n_groups=8,
         d_state=128,
         d_conv=4,
-        dt_rank=128,
         use_moe="True",
         n_experts=256,
         top_k=8,
         moe_inter=2048,
         n_shared=1,
+        shared_inter=10240,
+        scaling=5.0,
         inter=21504,
         eps="1e-5",
         tie="False",
@@ -1387,15 +1403,18 @@ SPECS = [
         head_dim=128,
         theta="1000000.0",
         attn_every=6,
-        mamba_expand=2,
-        d_state=64,
+        mamba_n_heads=96,
+        mamba_head_dim=80,
+        mamba_n_groups=8,
+        d_state=128,
         d_conv=4,
-        dt_rank=80,
         use_moe="False",
         n_experts=8,
         top_k=2,
         moe_inter=128,
         n_shared=1,
+        shared_inter=256,
+        scaling=1.0,
         inter=9728,
         eps="1e-5",
         tie="True",
@@ -1474,6 +1493,9 @@ SPECS = [
         top_k=8,
         moe_inter=1024,
         n_shared=1,
+        first_k_dense=4,
+        inter=18432,
+        scaling=2.5,
         eps="1e-5",
         tie="False",
         desc="Ling 2.5: a 1T Lightning-attention + full-attention hybrid with MoE. Config approximate.\nASSUMPTION: full-attention layers use GQA here, not MLA. See kimi_linear.py.",
@@ -1499,6 +1521,9 @@ SPECS = [
         top_k=8,
         moe_inter=1024,
         n_shared=1,
+        first_k_dense=4,
+        inter=18432,
+        scaling=2.5,
         eps="1e-5",
         tie="False",
         desc="Ling 2.6: iteration on Ling 2.5 (linear-attention hybrid + MoE). Config approximate.\nASSUMPTION: full-attention layers use GQA here, not MLA. See kimi_linear.py.",

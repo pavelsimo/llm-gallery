@@ -154,11 +154,12 @@ class Attention(nn.Module):
 class Expert(nn.Module):
     """One expert is just a SwiGLU MLP (with the small per-expert hidden size)."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, intermediate: int | None = None):
         super().__init__()
-        self.gate_proj = nn.Linear(cfg.n_embd, cfg.moe_intermediate_size, bias=False)
-        self.up_proj = nn.Linear(cfg.n_embd, cfg.moe_intermediate_size, bias=False)
-        self.down_proj = nn.Linear(cfg.moe_intermediate_size, cfg.n_embd, bias=False)
+        intermediate = intermediate if intermediate is not None else cfg.moe_intermediate_size
+        self.gate_proj = nn.Linear(cfg.n_embd, intermediate, bias=False)
+        self.up_proj = nn.Linear(cfg.n_embd, intermediate, bias=False)
+        self.down_proj = nn.Linear(intermediate, cfg.n_embd, bias=False)
 
     def forward(self, x):
         return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
@@ -190,9 +191,7 @@ class MoE(nn.Module):
         # Optional always-on "shared" expert(s): one wider SwiGLU applied to every token.
         self.shared = None
         if cfg.n_shared_experts > 0:
-            shared_cfg = Config(**{**cfg.__dict__})
-            shared_cfg.moe_intermediate_size = cfg.moe_intermediate_size * cfg.n_shared_experts
-            self.shared = Expert(shared_cfg)
+            self.shared = Expert(cfg, cfg.moe_intermediate_size * cfg.n_shared_experts)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, t, c = x.shape
@@ -261,15 +260,6 @@ class Model(nn.Module):
         cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        n = cfg.context_length
-        ar = torch.arange(n)
-        future = ar[None, :] > ar[:, None]
-        if cfg.sliding_window > 0:
-            too_far = (ar[:, None] - ar[None, :]) >= cfg.sliding_window
-            self.register_buffer("mask_local", future | too_far, persistent=False)
-        else:
-            self.register_buffer("mask_local", future, persistent=False)
-        self.register_buffer("mask_global", future, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -278,10 +268,20 @@ class Model(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         b, t = idx.shape
+        assert t <= self.config.context_length
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        # Full causal mask (global) and, if sliding_window > 0, a sliding-window mask (local).
+        ar = torch.arange(t, device=idx.device)
+        future = ar[None, :] > ar[:, None]
+        mask_global = future
+        if self.config.sliding_window > 0:
+            too_far = (ar[:, None] - ar[None, :]) >= self.config.sliding_window
+            mask_local = future | too_far
+        else:
+            mask_local = future
         for block in self.blocks:
-            mask = self.mask_global if block.is_global else self.mask_local
+            mask = mask_global if block.is_global else mask_local
             x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 

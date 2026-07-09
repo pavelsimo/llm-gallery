@@ -39,10 +39,9 @@
     <main class="viewer-shell">
       <aside class="diagram-pane" tabindex="0" aria-label="Diagram and model metadata">
         <div class="notice" id="viewerNotice" role="status" hidden></div>
+        <div class="diagram-wrap" id="diagramWrap"></div>
         <div class="model-facts" id="modelFacts"></div>
         <section class="related-models" id="relatedModels" aria-label="Related models"></section>
-        <div class="diagram-wrap" id="diagramWrap"></div>
-        <nav class="section-nav" id="sectionNav" aria-label="Code sections"></nav>
       </aside>
       <section class="code-pane" aria-label="Source code">
         <div class="terminal-bar">
@@ -82,17 +81,6 @@
           >
             Tech Report
           </button>
-          <button
-            class="viewer-tab"
-            id="galleryTab"
-            type="button"
-            role="tab"
-            aria-selected="false"
-            aria-controls="galleryTabPanel"
-            data-viewer-tab="gallery"
-          >
-            Gallery
-          </button>
         </div>
         <div class="tab-panel code-tab-panel" id="codeTabPanel" role="tabpanel" aria-labelledby="codeTab">
           <div class="code-toolbar">
@@ -126,17 +114,6 @@
             <p id="reportFallbackText"></p>
             <a id="reportOpenLink" href="#" target="_blank" rel="noreferrer">Open report</a>
           </div>
-        </div>
-        <div class="tab-panel gallery-tab-panel" id="galleryTabPanel" role="tabpanel" aria-labelledby="galleryTab" hidden>
-          <div class="gallery-artwork-wrap" id="galleryArtworkWrap">
-            <img id="galleryArtwork" alt="" loading="lazy" />
-          </div>
-          <div class="gallery-fallback" id="galleryFallback" hidden>
-            <p id="galleryFallbackText"></p>
-          </div>
-          <a class="gallery-source-link" id="gallerySourceLink" href="#" target="_blank" rel="noreferrer">
-            Open source
-          </a>
         </div>
       </section>
     </main>

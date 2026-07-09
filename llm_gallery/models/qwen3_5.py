@@ -103,6 +103,8 @@ class GatedDeltaNet(nn.Module):
             groups=cfg.n_embd, padding=cfg.linear_conv_kernel_dim - 1,
         )
         self.alpha_proj = nn.Linear(cfg.n_embd, cfg.linear_n_head)  # decay gate per head
+        self.A_log = nn.Parameter(torch.zeros(cfg.linear_n_head))  # per-head decay rate (log-space)
+        self.dt_bias = nn.Parameter(torch.zeros(cfg.linear_n_head))
         self.beta_proj = nn.Linear(cfg.n_embd, cfg.linear_n_head)  # write strength per head
         self.g_proj = nn.Linear(cfg.n_embd, cfg.n_embd)  # output gate
         self.out_norm = RMSNorm(self.head_dim, cfg.norm_eps)
@@ -111,13 +113,14 @@ class GatedDeltaNet(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, t, d = x.shape
         nh, hd = self.n_head, self.head_dim
-        q = self.q_conv(self.q_proj(x).transpose(1, 2))[..., :t].transpose(1, 2)
-        k = self.k_conv(self.k_proj(x).transpose(1, 2))[..., :t].transpose(1, 2)
-        v = self.v_conv(self.v_proj(x).transpose(1, 2))[..., :t].transpose(1, 2)
+        q = F.silu(self.q_conv(self.q_proj(x).transpose(1, 2))[..., :t].transpose(1, 2))
+        k = F.silu(self.k_conv(self.k_proj(x).transpose(1, 2))[..., :t].transpose(1, 2))
+        v = F.silu(self.v_conv(self.v_proj(x).transpose(1, 2))[..., :t].transpose(1, 2))
         q = F.normalize(q.reshape(b, t, nh, hd), dim=-1)
         k = F.normalize(k.reshape(b, t, nh, hd), dim=-1)
         v = v.reshape(b, t, nh, hd)
-        alpha = torch.sigmoid(self.alpha_proj(x))  # [B, T, nh] in (0,1)
+        # per-head decay in (0,1): alpha = exp(-exp(A) * softplus(a + dt_bias))
+        alpha = torch.exp(-self.A_log.exp() * F.softplus(self.alpha_proj(x) + self.dt_bias))
         beta = torch.sigmoid(self.beta_proj(x))
 
         s = x.new_zeros(b, nh, hd, hd)  # state: [value_dim, key_dim]
@@ -126,8 +129,9 @@ class GatedDeltaNet(nn.Module):
             k_i, v_i, q_i = k[:, i], v[:, i], q[:, i]  # [B, nh, hd]
             a = alpha[:, i].view(b, nh, 1, 1)
             be = beta[:, i].view(b, nh, 1, 1)
-            sk = (s @ k_i.unsqueeze(-1)).squeeze(-1)  # [B, nh, hd] current memory readout for k
-            s = a * s + be * ((v_i - sk).unsqueeze(-1) @ k_i.unsqueeze(-2))  # corrective write
+            s = a * s  # decay first ...
+            sk = (s @ k_i.unsqueeze(-1)).squeeze(-1)  # [B, nh, hd] what the decayed memory predicts
+            s = s + be * ((v_i - sk).unsqueeze(-1) @ k_i.unsqueeze(-2))  # ... then corrective write
             outs.append((s @ q_i.unsqueeze(-1)).squeeze(-1))  # read with query
         o = torch.stack(outs, dim=1)  # [B, T, nh, hd]
         o = self.out_norm(o).reshape(b, t, d)
@@ -165,7 +169,7 @@ def repeat_kv(x, n_rep):
 
 
 class GatedAttention(nn.Module):
-    """Standard GQA whose output is multiplied by a learned sigmoid gate."""
+    """GQA with per-head QK-norm whose output is multiplied by a learned sigmoid gate."""
 
     def __init__(self, cfg: Config):
         super().__init__()
@@ -178,13 +182,15 @@ class GatedAttention(nn.Module):
         self.q_proj = nn.Linear(cfg.n_embd, self.n_head * self.head_dim, bias=False)
         self.k_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
         self.v_proj = nn.Linear(cfg.n_embd, self.n_kv_head * self.head_dim, bias=False)
+        self.q_norm = RMSNorm(cfg.head_dim, cfg.norm_eps)  # per-head, before RoPE
+        self.k_norm = RMSNorm(cfg.head_dim, cfg.norm_eps)
         self.g_proj = nn.Linear(cfg.n_embd, self.n_head * self.head_dim, bias=False)  # gate
         self.o_proj = nn.Linear(self.n_head * self.head_dim, cfg.n_embd, bias=False)
 
     def forward(self, x, cos, sin, mask):
         b, t, _ = x.shape
-        q = self.q_proj(x).view(b, t, self.n_head, self.head_dim).transpose(1, 2)
-        k = self.k_proj(x).view(b, t, self.n_kv_head, self.head_dim).transpose(1, 2)
+        q = self.q_norm(self.q_proj(x).view(b, t, self.n_head, self.head_dim)).transpose(1, 2)
+        k = self.k_norm(self.k_proj(x).view(b, t, self.n_kv_head, self.head_dim)).transpose(1, 2)
         v = self.v_proj(x).view(b, t, self.n_kv_head, self.head_dim).transpose(1, 2)
         q, k = apply_rope(q, k, cos, sin)
         k, v = repeat_kv(k, self.n_rep), repeat_kv(v, self.n_rep)
@@ -210,7 +216,7 @@ class MLP(nn.Module):
 
 
 class MoE(nn.Module):
-    """Sparse top-k MoE with optional always-on shared expert."""
+    """Sparse top-k MoE with an always-on shared expert behind a learned sigmoid gate."""
 
     def __init__(self, cfg: Config):
         super().__init__()
@@ -221,6 +227,7 @@ class MoE(nn.Module):
             MLP(cfg.n_embd, cfg.moe_intermediate_size * cfg.n_shared_experts)
             if cfg.n_shared_experts > 0 else None
         )
+        self.shared_gate = nn.Linear(cfg.n_embd, 1, bias=False) if self.shared is not None else None
 
     def forward(self, x):
         b, t, c = x.shape
@@ -235,7 +242,7 @@ class MoE(nn.Module):
             ti, slot = sel.nonzero(as_tuple=True)
             out[ti] += topw[ti, slot].unsqueeze(-1) * self.experts[e](x[ti])
         if self.shared is not None:
-            out = out + self.shared(x)
+            out = out + torch.sigmoid(self.shared_gate(x)) * self.shared(x)
         return out.reshape(b, t, c)
 
 
@@ -282,10 +289,6 @@ class Model(nn.Module):
         cos, sin = precompute_rope(rotary_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -298,10 +301,12 @@ class Model(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         b, t = idx.shape
+        assert t <= self.config.context_length, "sequence longer than context_length"
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        mask = torch.triu(torch.ones(t, t, dtype=torch.bool, device=idx.device), diagonal=1)
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 

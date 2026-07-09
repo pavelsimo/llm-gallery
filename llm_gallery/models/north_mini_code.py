@@ -229,11 +229,6 @@ class Model(nn.Module):
         cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        positions = torch.arange(cfg.context_length)
-        causal = positions[None, :] > positions[:, None]
-        too_old = positions[None, :] < (positions[:, None] - cfg.sliding_window + 1)
-        self.register_buffer("causal_mask", causal, persistent=False)
-        self.register_buffer("sliding_mask", causal | too_old, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -245,8 +240,13 @@ class Model(nn.Module):
         assert t <= self.config.context_length, f"sequence length {t} > context {self.config.context_length}"
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        positions = torch.arange(t, device=idx.device)
+        causal_mask = positions[None, :] > positions[:, None]
+        # a token attends to itself and the previous sliding_window-1 positions
+        too_old = positions[None, :] < (positions[:, None] - self.config.sliding_window + 1)
+        sliding_mask = causal_mask | too_old
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask, self.sliding_mask)
+            x = block(x, cos, sin, causal_mask, sliding_mask)
         return self.lm_head(self.norm(x))
 
 

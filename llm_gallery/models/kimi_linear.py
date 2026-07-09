@@ -11,11 +11,15 @@ A few layers keep ordinary full attention so the model retains exact long-range 
 feed-forward is a sparse MoE. The recurrence is written sequentially for clarity.
 
 ASSUMPTION: the real Kimi Linear uses MLA for its full-attention layers (see `deepseek_v3.py` for
-MLA) and a more elaborate gated "Kimi Delta Attention"; here the full-attention layers are plain GQA
-and the linear mixer is vanilla linear attention. The real preset still keeps the published outer
-dimensions (27 layers, 2304 hidden size, 256 routed experts, top-8, 1024-wide experts, 1M-token
-context, theta=10000); only the internal MLA/KDA mechanics are simplified. The headline idea, O(T)
-linear attention interleaved with full attention, is faithful.
+MLA) and a more elaborate gated "Kimi Delta Attention" whose heads are 128-wide; here the
+full-attention layers are plain GQA and the linear mixer is vanilla linear attention with
+``n_embd // linear_n_head``-wide heads. The real model's MLA layers are also **NoPE**
+(``mla_use_nope: true`` — no rotary; position comes from the linear layers); the GQA stand-in here
+keeps RoPE. The real preset still keeps the published outer dimensions (27 layers, 2304 hidden size,
+256 routed experts, top-8, 1024-wide experts, first dense layer 9216-wide, 1M-token context), the
+published full-attention schedule (every 4th layer plus the final layer), and the published router
+(sigmoid scores, renormalized, scaled by 2.446); only the internal MLA/KDA mechanics are simplified.
+The headline idea, O(T) linear attention interleaved with full attention, is faithful.
 
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (Kimi Linear)
 Tech report: https://arxiv.org/pdf/2510.26692
@@ -57,6 +61,9 @@ class Config:
     n_experts_per_tok: int = 8
     moe_intermediate_size: int = 1024
     n_shared_experts: int = 1
+    first_k_dense: int = 1  # the first k layers use a dense MLP instead of MoE
+    intermediate_size: int = 9216  # dense MLP width for the first_k_dense layers
+    routed_scaling_factor: float = 2.446
     norm_eps: float = 1e-5
     tie_embeddings: bool = False
 
@@ -65,7 +72,8 @@ PRESETS: dict[str, Config] = {
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=6, n_embd=128, linear_n_head=4, n_head=4,
         n_kv_head=2, head_dim=32, rope_theta=10000.0, attn_every=3, n_experts=8, n_experts_per_tok=2,
-        moe_intermediate_size=128, n_shared_experts=1,
+        moe_intermediate_size=128, n_shared_experts=1, first_k_dense=1, intermediate_size=256,
+        routed_scaling_factor=1.0,
     ),
     "kimi-linear": Config(),
 }
@@ -195,11 +203,12 @@ class MLP(nn.Module):
 
 
 class MoE(nn.Module):
-    """Sparse top-k MoE with optional always-on shared expert."""
+    """Sparse top-k MoE with sigmoid routing (renormalized, scaled) and an always-on shared expert."""
 
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_experts, self.top_k = cfg.n_experts, cfg.n_experts_per_tok
+        self.scaling = cfg.routed_scaling_factor
         self.gate = nn.Linear(cfg.n_embd, cfg.n_experts, bias=False)
         self.experts = nn.ModuleList(MLP(cfg.n_embd, cfg.moe_intermediate_size) for _ in range(cfg.n_experts))
         self.shared = (
@@ -210,8 +219,8 @@ class MoE(nn.Module):
     def forward(self, x):
         b, t, c = x.shape
         x = x.reshape(-1, c)
-        topw, topi = F.softmax(self.gate(x), dim=-1).topk(self.top_k, dim=-1)
-        topw = topw / topw.sum(dim=-1, keepdim=True)
+        topw, topi = torch.sigmoid(self.gate(x)).topk(self.top_k, dim=-1)
+        topw = topw / (topw.sum(dim=-1, keepdim=True) + 1e-20) * self.scaling
         out = torch.zeros_like(x)
         for e in range(self.n_experts):
             sel = topi == e
@@ -225,15 +234,15 @@ class MoE(nn.Module):
 
 
 class Block(nn.Module):
-    """Hybrid block: LinearAttention or GQA (is_attn), always followed by a sparse MoE FFN."""
+    """Hybrid block: LinearAttention or GQA (is_attn), followed by a dense MLP or sparse MoE FFN."""
 
-    def __init__(self, cfg: Config, is_attn: bool):
+    def __init__(self, cfg: Config, is_attn: bool, is_dense: bool = False):
         super().__init__()
         self.is_attn = is_attn
         self.mix_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.mix = Attention(cfg) if is_attn else LinearAttention(cfg)
         self.ffn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
-        self.ffn = MoE(cfg)
+        self.ffn = MLP(cfg.n_embd, cfg.intermediate_size) if is_dense else MoE(cfg)
 
     def forward(self, x, cos, sin, mask):
         if self.is_attn:
@@ -254,8 +263,14 @@ class Model(nn.Module):
         super().__init__()
         self.config = cfg
         self.tok_emb = nn.Embedding(cfg.vocab_size, cfg.n_embd)
+        # every Nth layer is full attention; the published schedule also makes the FINAL layer full
         self.blocks = nn.ModuleList(
-            Block(cfg, is_attn=((i + 1) % cfg.attn_every == 0)) for i in range(cfg.n_layer)
+            Block(
+                cfg,
+                is_attn=((i + 1) % cfg.attn_every == 0 or i == cfg.n_layer - 1),
+                is_dense=(i < cfg.first_k_dense),
+            )
+            for i in range(cfg.n_layer)
         )
         self.norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         self.lm_head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
@@ -264,10 +279,6 @@ class Model(nn.Module):
         cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -280,10 +291,12 @@ class Model(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         b, t = idx.shape
+        assert t <= self.config.context_length, "sequence longer than context_length"
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        mask = torch.triu(torch.ones(t, t, dtype=torch.bool, device=idx.device), diagonal=1)
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 

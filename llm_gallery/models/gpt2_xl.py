@@ -50,7 +50,7 @@ class Config:
     n_layer: int = 48
     n_head: int = 25
     n_embd: int = 1600  # model width; must be divisible by n_head
-    dropout: float = 0.0
+    dropout: float = 0.0  # GPT-2 trained with 0.1; kept at 0.0 for inference-focused teaching code
     bias: bool = True  # GPT-2 uses bias terms in all Linear and LayerNorm layers
 
 

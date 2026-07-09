@@ -10,6 +10,9 @@ MiniMax M3 extends the M2-style sparse MoE backbone to million-token context. Th
 ASSUMPTION: the sparse block-index selection is represented in config/docstrings and the visualizer,
 but this runnable educational implementation uses full causal attention for the attention math.
 
+NOTE: the public config's multi-token-prediction modules (``num_mtp_modules: 7``) are omitted, as is
+common across this gallery.
+
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (MiniMax M3)
 Tech report: https://arxiv.org/abs/2606.13392
 Config: https://huggingface.co/MiniMaxAI/MiniMax-M3/blob/main/config.json
@@ -50,8 +53,12 @@ class Config:
     n_experts: int = 128
     n_experts_per_tok: int = 4
     n_shared_experts: int = 1
+    routed_scaling_factor: float = 2.0
+    swiglu_alpha: float = 1.702  # clamped-SwiGLU ("swigluoai") gate sharpness
+    swiglu_limit: float = 7.0  # clamp bound on the gate/up activations
     sparse_attention_topk_blocks: int = 16
     sparse_attention_block_size: int = 128
+    partial_rotary_factor: float = 0.5  # only the first head_dim*factor channels are rotated
     rope_theta: float = 5000000.0
     norm_eps: float = 1e-6
     tie_embeddings: bool = False
@@ -72,8 +79,10 @@ PRESETS: dict[str, Config] = {
         n_experts=8,
         n_experts_per_tok=2,
         n_shared_experts=1,
+        routed_scaling_factor=1.0,
         sparse_attention_topk_blocks=4,
         sparse_attention_block_size=16,
+        partial_rotary_factor=0.5,
         rope_theta=10000.0,
     ),
     "minimax-m3": Config(),
@@ -90,17 +99,18 @@ class RMSNorm(nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
-        self.weight = nn.Parameter(torch.ones(dim))
+        # Gemma-style (1 + weight) scaling, zero-initialized (use_gemma_norm in the public config)
+        self.weight = nn.Parameter(torch.zeros(dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         dtype = x.dtype
         x = x.float()
         x = x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
-        return x.to(dtype) * self.weight
+        return x.to(dtype) * (1.0 + self.weight)
 
 
-def precompute_rope(head_dim: int, max_seq_len: int, theta: float):
-    inv_freq = 1.0 / (theta ** (torch.arange(0, head_dim, 2).float() / head_dim))
+def precompute_rope(rotary_dim: int, max_seq_len: int, theta: float):
+    inv_freq = 1.0 / (theta ** (torch.arange(0, rotary_dim, 2).float() / rotary_dim))
     freqs = torch.outer(torch.arange(max_seq_len).float(), inv_freq)
     emb = torch.cat([freqs, freqs], dim=-1)
     return emb.cos(), emb.sin()
@@ -112,8 +122,14 @@ def rotate_half(x: torch.Tensor) -> torch.Tensor:
 
 
 def apply_rope(q, k, cos, sin):
+    # Partial RoPE: rotate only the first rotary_dim channels; pass the rest through unchanged.
     cos, sin = cos[None, None], sin[None, None]
-    return q * cos + rotate_half(q) * sin, k * cos + rotate_half(k) * sin
+    rotary_dim = cos.shape[-1]
+    q_rot, q_pass = q[..., :rotary_dim], q[..., rotary_dim:]
+    k_rot, k_pass = k[..., :rotary_dim], k[..., rotary_dim:]
+    q_rot = q_rot * cos + rotate_half(q_rot) * sin
+    k_rot = k_rot * cos + rotate_half(k_rot) * sin
+    return torch.cat([q_rot, q_pass], dim=-1), torch.cat([k_rot, k_pass], dim=-1)
 
 
 def repeat_kv(x: torch.Tensor, n_rep: int) -> torch.Tensor:
@@ -157,31 +173,47 @@ class MiniMaxSparseAttention(nn.Module):
 
 
 class SwiGLU(nn.Module):
-    """Gated MLP used by dense prefix layers and routed/shared experts."""
+    """Clamped gated MLP ("swigluoai") used by dense prefix layers and routed/shared experts."""
 
-    def __init__(self, n_embd: int, intermediate: int):
+    def __init__(self, n_embd: int, intermediate: int, alpha: float, limit: float):
         super().__init__()
+        self.alpha = alpha
+        self.limit = limit
         self.gate_proj = nn.Linear(n_embd, intermediate, bias=False)
         self.up_proj = nn.Linear(n_embd, intermediate, bias=False)
         self.down_proj = nn.Linear(intermediate, n_embd, bias=False)
 
     def forward(self, x):
-        return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
+        gate, up = self.gate_proj(x), self.up_proj(x)
+        gate = gate.clamp(max=self.limit)
+        up = up.clamp(min=-self.limit, max=self.limit)
+        h = gate * torch.sigmoid(self.alpha * gate) * (up + 1)
+        return self.down_proj(h)
 
 
 class MoE(nn.Module):
-    """Sigmoid-routed MoE with a shared always-on expert."""
+    """Sigmoid-routed MoE with a routing bias (selection only) and a shared always-on expert."""
 
     def __init__(self, cfg: Config):
         super().__init__()
         self.top_k = cfg.n_experts_per_tok
         self.n_experts = cfg.n_experts
+        self.scaling = cfg.routed_scaling_factor
         self.gate = nn.Linear(cfg.n_embd, cfg.n_experts, bias=False)
+        # Aux-loss-free load-balancing bias (use_routing_bias): added to the scores for expert
+        # SELECTION only (DeepSeek-V3 noaux style); the mixing weights use the raw sigmoid scores.
+        self.gate_bias = nn.Parameter(torch.zeros(cfg.n_experts))
         self.experts = nn.ModuleList(
-            SwiGLU(cfg.n_embd, cfg.moe_intermediate_size) for _ in range(cfg.n_experts)
+            SwiGLU(cfg.n_embd, cfg.moe_intermediate_size, cfg.swiglu_alpha, cfg.swiglu_limit)
+            for _ in range(cfg.n_experts)
         )
         self.shared = (
-            SwiGLU(cfg.n_embd, cfg.moe_intermediate_size * cfg.n_shared_experts)
+            SwiGLU(
+                cfg.n_embd,
+                cfg.moe_intermediate_size * cfg.n_shared_experts,
+                cfg.swiglu_alpha,
+                cfg.swiglu_limit,
+            )
             if cfg.n_shared_experts > 0
             else None
         )
@@ -190,8 +222,10 @@ class MoE(nn.Module):
         b, t, c = x.shape
         x = x.reshape(-1, c)
         scores = self.gate(x).sigmoid()
-        topw, topi = scores.topk(self.top_k, dim=-1)
-        topw = topw / (topw.sum(dim=-1, keepdim=True) + 1e-20)
+        sel = scores + self.gate_bias  # bias steers selection only, not the mixing weights
+        topi = sel.topk(self.top_k, dim=-1).indices
+        topw = scores.gather(-1, topi)
+        topw = topw / (topw.sum(dim=-1, keepdim=True) + 1e-20) * self.scaling
         out = torch.zeros_like(x)
         for e in range(self.n_experts):
             sel = topi == e
@@ -213,7 +247,9 @@ class Block(nn.Module):
         self.attn = MiniMaxSparseAttention(cfg)
         self.ffn_norm = RMSNorm(cfg.n_embd, cfg.norm_eps)
         if layer_idx < cfg.first_k_dense:
-            self.ffn = SwiGLU(cfg.n_embd, cfg.dense_intermediate_size)
+            self.ffn = SwiGLU(
+                cfg.n_embd, cfg.dense_intermediate_size, cfg.swiglu_alpha, cfg.swiglu_limit
+            )
         else:
             self.ffn = MoE(cfg)
 
@@ -238,13 +274,12 @@ class Model(nn.Module):
         self.lm_head = nn.Linear(cfg.n_embd, cfg.vocab_size, bias=False)
         if cfg.tie_embeddings:
             self.lm_head.weight = self.tok_emb.weight
-        cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
+        # Partial RoPE (rotary_dim = head_dim * partial_rotary_factor): tables cover only the
+        # rotated prefix of each head; apply_rope passes the remaining channels through.
+        rotary_dim = int(cfg.head_dim * cfg.partial_rotary_factor)
+        cos, sin = precompute_rope(rotary_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -252,12 +287,13 @@ class Model(nn.Module):
             nn.init.normal_(m.weight, mean=0.0, std=0.02)
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
-        _, t = idx.shape
+        b, t = idx.shape
         assert t <= self.config.context_length, f"sequence length {t} > context {self.config.context_length}"
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        mask = torch.triu(torch.ones(t, t, dtype=torch.bool, device=idx.device), diagonal=1)
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 
@@ -270,7 +306,9 @@ if __name__ == "__main__":
     model = Model(cfg)
     idx = torch.randint(0, cfg.vocab_size, (2, 16))
     logits = model(idx)
-    F.cross_entropy(logits.reshape(-1, logits.size(-1)), idx.reshape(-1)).backward()
+    loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), idx.reshape(-1))
+    loss.backward()
     print(f"{MODEL_NAME}  (tiny preset)")
     print(f"  params : {sum(p.numel() for p in model.parameters()):,}")
     print(f"  logits : {tuple(logits.shape)}")
+    print(f"  loss   : {loss.item():.4f}  (~ln(vocab)={math.log(cfg.vocab_size):.4f})")

@@ -23,7 +23,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 MODEL_NAME = "SmolLM3 (3B)"
-RELEASE_DATE = "2025-06-19"
+RELEASE_DATE = "2025-07-08"
 GALLERY_URL = "https://sebastianraschka.com/llm-architecture-gallery"
 TECH_REPORT_URL = "https://huggingface.co/blog/smollm3"
 
@@ -62,7 +62,7 @@ DEFAULT_PRESET = "smollm3-3b"
 class RMSNorm(nn.Module):
     """Root-mean-square normalization; scales tokens without centering."""
 
-    def __init__(self, dim: int, eps: float = 1e-5):
+    def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
         self.eps = eps
         self.weight = nn.Parameter(torch.ones(dim))
@@ -183,10 +183,6 @@ class Model(nn.Module):
         cos, sin = precompute_rope(head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -195,10 +191,12 @@ class Model(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         b, t = idx.shape
+        assert t <= self.config.context_length
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        mask = torch.triu(torch.ones(t, t, dtype=torch.bool, device=idx.device), diagonal=1)
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 

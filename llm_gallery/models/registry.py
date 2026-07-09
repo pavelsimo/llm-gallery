@@ -45,7 +45,7 @@ REGISTRY: list[Entry] = [
     Entry("qwen3-32b",        "qwen3_32b",         "Qwen3 (32B)",                        "2025-04-28", "GQA + QK-Norm",                               DONE),
     Entry("qwen3-4b",         "qwen3_4b",          "Qwen3 (4B)",                         "2025-04-28", "GQA + QK-Norm",                               DONE),
     Entry("qwen3-8b",         "qwen3_8b",          "Qwen3 (8B)",                         "2025-04-28", "GQA + QK-Norm",                               DONE),
-    Entry("smollm3-3b",       "smollm3_3b",        "SmolLM3 (3B)",                       "2025-06-19", "GQA + periodic NoPE",                         DONE, tier=2),
+    Entry("smollm3-3b",       "smollm3_3b",        "SmolLM3 (3B)",                       "2025-07-08", "GQA + periodic NoPE",                         DONE, tier=2),
     Entry("kimi-k2",          "kimi_k2",           "Kimi K2 (1T)",                       "2025-07-10", "MLA sparse MoE",                              DONE),
     Entry("glm-4.5",          "glm_4_5",           "GLM-4.5 (355B)",                     "2025-07-28", "sparse MoE + GQA + QK-Norm",                  DONE),
     Entry("gpt-oss-120b",     "gpt_oss_120b",      "GPT-OSS (120B)",                     "2025-08-04", "sparse MoE + alternating attn + sinks",       DONE),

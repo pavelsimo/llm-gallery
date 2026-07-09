@@ -60,7 +60,7 @@ AUDITED_REFERENCE_CONFIGS = {
     },
     "gemma3-27b": {
         "vocab_size": 262208,
-        "context_length": 128000,
+        "context_length": 131072,
         "n_layer": 62,
         "n_head": 32,
         "n_kv_head": 16,
@@ -100,6 +100,9 @@ AUDITED_REFERENCE_CONFIGS = {
         "n_experts": 256,
         "n_experts_per_tok": 8,
         "n_shared_experts": 1,
+        "first_k_dense": 1,
+        "intermediate_size": 9216,
+        "routed_scaling_factor": 2.446,
     },
     "xlstm-7b": {
         "vocab_size": 50304,
@@ -107,7 +110,9 @@ AUDITED_REFERENCE_CONFIGS = {
         "n_layer": 32,
         "n_embd": 4096,
         "n_head": 8,
-        "intermediate_size": 11008,
+        "qk_dim_factor": 0.5,
+        "gate_soft_cap": 15.0,
+        "intermediate_size": 10944,
         "tie_embeddings": False,
     },
     "nemotron3-nano-30b": {
@@ -119,9 +124,15 @@ AUDITED_REFERENCE_CONFIGS = {
         "n_kv_head": 2,
         "head_dim": 128,
         "layer_pattern": "MEMEM*EMEMEM*EMEMEM*EMEMEM*EMEMEM*EMEMEMEM*EMEMEMEME",
+        "mamba_n_heads": 64,
+        "mamba_head_dim": 64,
+        "mamba_n_groups": 8,
+        "mamba_d_state": 128,
         "n_experts": 128,
         "n_experts_per_tok": 6,
         "n_shared_experts": 1,
+        "shared_expert_intermediate_size": 3712,
+        "routed_scaling_factor": 2.5,
     },
 }
 
@@ -207,11 +218,14 @@ def test_qwen3_next_matches_gated_deltanet_attention_moe_hybrid():
 
     assert [block.is_attn for block in model.blocks] == [False, False, True, False, False, True]
     assert model.blocks[0].mix.__class__.__name__ == "GatedDeltaNet"
+    assert model.blocks[0].mix.A_log.shape == (cfg.linear_n_head,)
     assert model.blocks[2].mix.__class__.__name__ == "GatedAttention"
+    assert model.blocks[2].mix.q_norm.__class__.__name__ == "RMSNorm"
     assert model.blocks[0].mix.q_conv.groups == cfg.n_embd
     assert model.blocks[2].mix.rotary_dim == int(cfg.head_dim * cfg.partial_rotary_factor)
     assert model.blocks[0].ffn.__class__.__name__ == "MoE"
     assert model.blocks[0].ffn.top_k == cfg.n_experts_per_tok
+    assert model.blocks[0].ffn.shared_gate is not None
 
 
 def test_kimi_linear_documents_simplified_linear_full_attention_hybrid():
@@ -220,8 +234,10 @@ def test_kimi_linear_documents_simplified_linear_full_attention_hybrid():
     assert [block.is_attn for block in model.blocks] == [False, False, True, False, False, True]
     assert model.blocks[0].mix.__class__.__name__ == "LinearAttention"
     assert model.blocks[2].mix.__class__.__name__ == "Attention"
-    assert model.blocks[0].ffn.__class__.__name__ == "MoE"
-    assert model.blocks[0].ffn.top_k == cfg.n_experts_per_tok
+    assert model.blocks[0].ffn.__class__.__name__ == "MLP"  # first_k_dense: layer 0 is dense
+    assert model.blocks[1].ffn.__class__.__name__ == "MoE"
+    assert model.blocks[1].ffn.top_k == cfg.n_experts_per_tok
+    assert model.blocks[1].ffn.scaling == cfg.routed_scaling_factor
     assert "ASSUMPTION" in (mod.__doc__ or "")
     assert "plain GQA" in (mod.__doc__ or "")
 
@@ -234,6 +250,8 @@ def test_xlstm_matches_attention_free_recurrent_mlstm_stack():
     assert hasattr(block.mix, "i_gate")
     assert hasattr(block.mix, "f_gate")
     assert hasattr(block.mix, "o_gate")
+    assert hasattr(block.mix, "out_norm")
+    assert block.mix.qk_head_dim == block.mix.head_dim // 2  # qk_dim_factor 0.5
     assert block.ffn.__class__.__name__ == "SwiGLU"
     assert not hasattr(model, "rope_cos")
     assert not hasattr(model, "causal_mask")
@@ -243,9 +261,14 @@ def test_nemotron3_nano_matches_mamba_attention_moe_macro_pattern():
     _, cfg, model = tiny_model("nemotron3-nano-30b")
 
     assert [block.layer_type for block in model.blocks] == list(cfg.layer_pattern)
-    assert model.blocks[0].mix.__class__.__name__ == "Mamba"
-    assert model.blocks[0].mix.conv1d.groups == model.blocks[0].mix.d_inner
+    mamba = model.blocks[0].mix
+    assert mamba.__class__.__name__ == "Mamba"
+    assert mamba.d_inner == cfg.mamba_n_heads * cfg.mamba_head_dim
+    assert mamba.conv1d.groups == mamba.conv_dim  # conv runs over [x, B, C] (Mamba-2)
+    assert mamba.A_log.shape == (cfg.mamba_n_heads,)  # scalar decay per head
+    assert mamba.norm.__class__.__name__ == "RMSNorm"  # gated norm before out_proj
     assert model.blocks[1].ffn.__class__.__name__ == "MoE"
     assert model.blocks[1].ffn.top_k == cfg.n_experts_per_tok
+    assert not hasattr(model.blocks[1].ffn.experts[0], "gate_proj")  # relu2 MLP, no gate
     assert model.blocks[2].attn.__class__.__name__ == "Attention"
     assert model.blocks[2].attn.n_kv_head == cfg.n_kv_head

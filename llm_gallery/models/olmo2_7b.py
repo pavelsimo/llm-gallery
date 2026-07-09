@@ -192,15 +192,6 @@ class Model(nn.Module):
         cos, sin = precompute_rope(head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        n = cfg.context_length
-        ar = torch.arange(n)
-        future = ar[None, :] > ar[:, None]
-        if cfg.sliding_window > 0:
-            too_far = (ar[:, None] - ar[None, :]) >= cfg.sliding_window
-            self.register_buffer("mask_local", future | too_far, persistent=False)
-        else:
-            self.register_buffer("mask_local", future, persistent=False)
-        self.register_buffer("mask_global", future, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -209,10 +200,20 @@ class Model(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         b, t = idx.shape
+        assert t <= self.config.context_length
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        ar = torch.arange(t, device=idx.device)
+        future = ar[None, :] > ar[:, None]
+        mask_global = future
+        if self.config.sliding_window > 0:
+            # a token attends to itself and the previous sliding_window-1 positions
+            too_far = (ar[:, None] - ar[None, :]) >= self.config.sliding_window
+            mask_local = future | too_far
+        else:
+            mask_local = mask_global
         for block in self.blocks:
-            mask = self.mask_global if block.is_global else self.mask_local
+            mask = mask_global if block.is_global else mask_local
             x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 

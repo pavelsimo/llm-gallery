@@ -107,6 +107,7 @@ class MLA(nn.Module):
         self.qk_nope = cfg.qk_nope_head_dim
         self.qk_rope = cfg.qk_rope_head_dim
         self.v_head_dim = cfg.v_head_dim
+        self.kv_lora_rank = cfg.kv_lora_rank
         self.q_head_dim = cfg.qk_nope_head_dim + cfg.qk_rope_head_dim
         self.scale = self.q_head_dim ** -0.5
 
@@ -134,7 +135,7 @@ class MLA(nn.Module):
 
         # ---- compressed keys/values ----
         kv = self.kv_a_proj(x)  # [B, T, kv_lora_rank + qk_rope]
-        kv_latent, k_rope = kv.split([self.kv_a_norm.weight.numel(), self.qk_rope], dim=-1)
+        kv_latent, k_rope = kv.split([self.kv_lora_rank, self.qk_rope], dim=-1)
         k_rope = k_rope.view(b, t, 1, self.qk_rope).transpose(1, 2)  # [B, 1, T, qk_rope] (shared)
         kv = self.kv_b_proj(self.kv_a_norm(kv_latent))
         kv = kv.view(b, t, self.n_head, self.qk_nope + self.v_head_dim).transpose(1, 2)
@@ -243,10 +244,6 @@ class Model(nn.Module):
         cos, sin = precompute_rope(cfg.qk_rope_head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -255,10 +252,12 @@ class Model(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         b, t = idx.shape
+        assert t <= self.config.context_length
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        mask = torch.triu(torch.ones(t, t, dtype=torch.bool, device=idx.device), diagonal=1)
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 

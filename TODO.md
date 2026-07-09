@@ -9,27 +9,39 @@ against its architecture diagram in `web/assets/architectures/<slug>.svg` (the d
 are SVGs with embedded raster images — there are no separate `.png` files) and against
 the published specs in the model's tech report.
 
+Done (2026-07-09): all 17 hand-written files (tier-1 bases, family bases and one-offs) audited
+against the HF config fixtures and tech reports; fixes applied and the 66 generated variants
+regenerated. Highlights: Nemotron's Mamba block rewritten from Mamba-1 to real Mamba-2
+(per-head scalar decay, grouped B/C, conv over [x,B,C], gated norm, relu² MLPs), Qwen3-Next's
+gated delta rule decay-order bug fixed (+ QK-norm, gated shared expert, real decay
+parameterization), Kimi Linear's routing (sigmoid + 2.446 scaling), first-dense-layer and
+final-full-attention schedule fixed, xLSTM's half-width q/k + output norm + gate soft-cap added,
+MiniMax M3's partial rotary / clamped SwiGLU / routing bias added, GPT-OSS's clamped SwiGLU
+implemented, and giant precomputed causal-mask buffers (up to 1 TiB) replaced with per-forward
+masks so real presets are constructable. Tier-3 configs remain gated by
+`tests/test_real_presets.py` fixtures.
+
 Things to check per model:
 
-- [ ] Attention variant (MHA / GQA / MQA / MLA / linear / sliding window) matches the diagram
-- [ ] Norm type and placement (pre/post, RMSNorm vs LayerNorm, QK-norm) matches
-- [ ] Positional encoding (RoPE variant, NoPE layers, partial rotary) matches
-- [ ] MoE details where applicable (expert count, shared experts, routing, top-k)
-- [ ] FFN type and activation (SwiGLU / GeGLU / ReLU²) matches
-- [ ] Config values (`n_layer`, `n_embd`, heads, vocab, context length) match the published spec
-- [ ] Section docstrings / anchors used by the visualizer still point at the right code
+- [x] Attention variant (MHA / GQA / MQA / MLA / linear / sliding window) matches the diagram
+- [x] Norm type and placement (pre/post, RMSNorm vs LayerNorm, QK-norm) matches
+- [x] Positional encoding (RoPE variant, NoPE layers, partial rotary) matches
+- [x] MoE details where applicable (expert count, shared experts, routing, top-k)
+- [x] FFN type and activation (SwiGLU / GeGLU / ReLU²) matches
+- [x] Config values (`n_layer`, `n_embd`, heads, vocab, context length) match the published spec
+- [x] Section docstrings / anchors used by the visualizer still point at the right code
 
 Suggested order — tier 1 first (from `llm_gallery/models/registry.py`):
 
-- [ ] gpt2-xl
-- [ ] llama3-8b
-- [ ] deepseek-v3
-- [ ] deepseek-r1
-- [ ] gemma3-27b
-- [ ] qwen3-next-80b-a3b
-- [ ] kimi-linear
-- [ ] xlstm-7b
-- [ ] nemotron3-nano-30b
+- [x] gpt2-xl
+- [x] llama3-8b
+- [x] deepseek-v3
+- [x] deepseek-r1
+- [x] gemma3-27b
+- [x] qwen3-next-80b-a3b
+- [x] kimi-linear
+- [x] xlstm-7b
+- [x] nemotron3-nano-30b
 
 Then tier 2, then tier 3 (tier 3 files are mostly config variants — verify configs only).
 

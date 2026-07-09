@@ -11,9 +11,10 @@ Architecturally it's a sparse-MoE Transformer (like `qwen3_30b_a3b.py`) plus two
 
 Every layer is MoE (top-k routed experts). gpt-oss also uses biases in its attention/expert linears.
 
-Simplifications (educational): the real gpt-oss uses a clamped gated activation in its experts and YaRN
-RoPE scaling for very long contexts; here experts are plain SwiGLU and RoPE is vanilla. The headline
-ideas — sinks + alternating attention + MoE — are implemented faithfully.
+The experts use gpt-oss's clamped SwiGLU ("swiglu_oai"): gate and up activations are clamped
+(alpha 1.702, limit 7) and the gate path gets a +1 residual — implemented faithfully below.
+Simplifications (educational): the real gpt-oss uses YaRN RoPE scaling for very long contexts; here
+RoPE is vanilla. The headline ideas — sinks + alternating attention + MoE — are implemented faithfully.
 
 Diagram: https://sebastianraschka.com/llm-architecture-gallery (GPT-OSS 20B)
 Tech report: https://cdn.openai.com/pdf/419b6906-9da6-406c-a19d-1bb078ac7637/oai_gpt-oss_model_card.pdf
@@ -52,6 +53,8 @@ class Config:
     n_experts_per_tok: int = 4
     moe_intermediate_size: int = 2880
     sliding_window: int = 128
+    swiglu_alpha: float = 1.702  # clamped-SwiGLU gate sharpness ("swiglu_oai")
+    swiglu_limit: float = 7.0  # clamp bound on the gate/up activations
     rope_theta: float = 150000.0
     norm_eps: float = 1e-5
     tie_embeddings: bool = False
@@ -146,16 +149,22 @@ class Attention(nn.Module):
 
 
 class Expert(nn.Module):
-    """One SwiGLU expert MLP (with biases, per GPT-OSS design)."""
+    """One clamped-SwiGLU ("swiglu_oai") expert MLP (with biases, per GPT-OSS design)."""
 
     def __init__(self, cfg: Config):
         super().__init__()
+        self.alpha = cfg.swiglu_alpha
+        self.limit = cfg.swiglu_limit
         self.gate_proj = nn.Linear(cfg.n_embd, cfg.moe_intermediate_size, bias=True)
         self.up_proj = nn.Linear(cfg.n_embd, cfg.moe_intermediate_size, bias=True)
         self.down_proj = nn.Linear(cfg.moe_intermediate_size, cfg.n_embd, bias=True)
 
     def forward(self, x):
-        return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
+        gate, up = self.gate_proj(x), self.up_proj(x)
+        gate = gate.clamp(max=self.limit)
+        up = up.clamp(min=-self.limit, max=self.limit)
+        h = gate * torch.sigmoid(self.alpha * gate) * (up + 1)
+        return self.down_proj(h)
 
 
 class MoE(nn.Module):
@@ -220,12 +229,6 @@ class Model(nn.Module):
         cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        n = cfg.context_length
-        ar = torch.arange(n)
-        future = ar[None, :] > ar[:, None]
-        too_far = (ar[:, None] - ar[None, :]) >= cfg.sliding_window
-        self.register_buffer("mask_global", future, persistent=False)
-        self.register_buffer("mask_local", future | too_far, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -238,10 +241,17 @@ class Model(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         b, t = idx.shape
+        assert t <= self.config.context_length
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        # Two masks: a full causal mask (global) and a sliding-window causal mask (local).
+        ar = torch.arange(t, device=idx.device)
+        future = ar[None, :] > ar[:, None]
+        too_far = (ar[:, None] - ar[None, :]) >= self.config.sliding_window
+        mask_global = future
+        mask_local = future | too_far
         for block in self.blocks:
-            mask = self.mask_local if block.is_local else self.mask_global
+            mask = mask_local if block.is_local else mask_global
             x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
@@ -255,10 +265,12 @@ if __name__ == "__main__":
     model = Model(cfg)
     idx = torch.randint(0, cfg.vocab_size, (2, 16))
     logits = model(idx)
-    F.cross_entropy(logits.reshape(-1, logits.size(-1)), idx.reshape(-1)).backward()
+    loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), idx.reshape(-1))
+    loss.backward()
     n_local = sum(b.is_local for b in model.blocks)
     print(f"{MODEL_NAME}  (tiny preset)")
     print(f"  attn   : {n_local} sliding-window + {cfg.n_layer - n_local} global layers, with sinks")
     print(f"  experts: {cfg.n_experts} total, top-{cfg.n_experts_per_tok}")
     print(f"  params : {sum(p.numel() for p in model.parameters()):,}")
     print(f"  logits : {tuple(logits.shape)}")
+    print(f"  loss   : {loss.item():.4f}  (~ln(vocab)={math.log(cfg.vocab_size):.4f})")

@@ -47,6 +47,9 @@ def test_viewer_diagram_code_roundtrip():
         page = browser.new_page(viewport={"width": 1280, "height": 900})
         try:
             page.goto(f"{base_url}/index.html", wait_until="networkidle")
+            expect(page.locator(".hero h1")).to_have_text("LLM gallery")
+            expect(page.locator(".hero h1 em")).to_have_text("gallery")
+            expect(page.locator(".hero-attribution")).to_contain_text("Based on Sebastian Raschka")
             assert page.locator("text=Every architecture in the gallery").count() == 0
             github_icon = page.locator(".header-link-icon")
             expect(github_icon).to_be_visible()
@@ -55,7 +58,6 @@ def test_viewer_diagram_code_roundtrip():
             assert github_icon_box["width"] <= 24
             assert github_icon_box["height"] <= 24
 
-            page.evaluate("""() => localStorage.setItem("llm-gallery-viewer-tab:llama3-8b", "report")""")
             page.goto(f"{base_url}/viewer.html?model=llama3-8b", wait_until="networkidle")
             assert page.locator(".terminal-bar .dot").count() == 0
             assert page.locator("#copyActiveLink").count() == 0
@@ -64,49 +66,51 @@ def test_viewer_diagram_code_roundtrip():
             expect(page.locator("#codeTab")).to_have_attribute("aria-selected", "true")
             expect(page.locator("#codeTabPanel")).to_be_visible()
             expect(page.locator("#reportTabPanel")).to_be_hidden()
-            gallery_tab = page.locator("#galleryTab")
-            expect(gallery_tab).to_be_visible()
-            assert gallery_tab.get_attribute("href") is None
-            assert gallery_tab.get_attribute("target") is None
-            expect(page.locator("#galleryTabPanel")).to_be_hidden()
-
-            popups = []
-            page.on("popup", lambda popup: popups.append(popup))
-            gallery_tab.click()
-            page.wait_for_timeout(100)
-            assert popups == []
-            assert page.url.startswith(f"{base_url}/viewer.html")
-            assert "tab=gallery" in page.url
-            expect(page.locator("#galleryTab")).to_have_attribute("aria-selected", "true")
-            expect(page.locator("#galleryTabPanel")).to_be_visible()
-            expect(page.locator("#codeTabPanel")).to_be_hidden()
-            expect(page.locator("#reportTabPanel")).to_be_hidden()
-            expect(page.locator("#galleryArtwork")).to_be_visible()
-            assert "assets/architectures/llama3-8b.svg" in (page.locator("#galleryArtwork").get_attribute("src") or "")
-            gallery_source = page.locator("#gallerySourceLink")
+            assert page.locator("#galleryTab").count() == 0
+            assert page.locator("#galleryTabPanel").count() == 0
+            expect(page.locator(".diagram-artwork-image")).to_be_visible()
+            expect(page.locator("#modelFacts")).to_contain_text("GQA + RoPE + SwiGLU + RMSNorm")
+            expect(page.locator("#modelFacts")).to_contain_text("Released 2024-04-18")
+            gallery_source = page.locator("#modelFacts .fact-links a")
             expect(gallery_source).to_be_visible()
+            expect(gallery_source).to_have_text("More information")
+            expect(gallery_source).to_have_attribute("aria-label", "More information")
+            expect(gallery_source).to_have_attribute("title", "More information")
             gallery_source_href = gallery_source.get_attribute("href")
             assert gallery_source_href is not None
             assert gallery_source_href.startswith("https://")
+            assert page.evaluate(
+                """
+                () => {
+                  const diagram = document.querySelector("#diagramWrap").getBoundingClientRect();
+                  const facts = document.querySelector("#modelFacts").getBoundingClientRect();
+                  const related = document.querySelector("#relatedModels").getBoundingClientRect();
+                  return facts.top >= diagram.bottom && related.top >= facts.bottom;
+                }
+                """
+            )
 
             page.locator("#reportTab").click()
             expect(page.locator("#reportTabPanel")).to_be_visible()
-            expect(page.locator("#galleryTabPanel")).to_be_hidden()
 
             page.locator("#codeTab").click()
             expect(page.locator("#codeTabPanel")).to_be_visible()
             expect(page.locator("#reportTabPanel")).to_be_hidden()
-            expect(page.locator("#galleryTabPanel")).to_be_hidden()
             page.locator("#codeTab").focus()
             page.keyboard.press("ArrowRight")
             expect(page.locator("#learnTabPanel")).to_be_visible()
             page.keyboard.press("ArrowRight")
             expect(page.locator("#reportTabPanel")).to_be_visible()
             page.keyboard.press("ArrowRight")
-            expect(page.locator("#galleryTabPanel")).to_be_visible()
+            expect(page.locator("#codeTabPanel")).to_be_visible()
             page.keyboard.press("ArrowLeft")
             expect(page.locator("#reportTabPanel")).to_be_visible()
             page.locator("#codeTab").click()
+
+            page.goto(f"{base_url}/viewer.html?model=llama3-8b&tab=gallery", wait_until="networkidle")
+            expect(page.locator("#codeTab")).to_have_attribute("aria-selected", "true")
+            expect(page.locator("#codeTabPanel")).to_be_visible()
+            assert "tab=gallery" not in page.url
 
             expect(page.locator(".diagram-artwork-image")).to_be_visible()
             assert page.locator(".diagram-hotspot").count() > 0
@@ -210,8 +214,15 @@ def test_viewer_diagram_code_roundtrip():
             # Concept-index chips round-trip into diagram/code selection.
             page.locator("#conceptIndex .concept-chip").first.click()
             assert page.evaluate("() => window.currentTargetId") == "config"
-            expect(page.locator('.section-chip[data-section-id="config"]').first).to_have_class(
-                "section-chip role-config active"
+            assert page.evaluate(
+                """
+                () => {
+                  const config = window.currentModel.sections.find((section) => section.id === "config");
+                  const active = [...document.querySelectorAll(".code-line.active")]
+                    .map((line) => Number(line.dataset.line));
+                  return active[0] === config.line_start && active.at(-1) === config.line_end;
+                }
+                """
             )
 
             page.locator("#codeTab").click()

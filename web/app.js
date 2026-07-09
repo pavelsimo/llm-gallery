@@ -81,24 +81,6 @@ function templateLabel(template) {
   }[template] || template;
 }
 
-function roleLabel(role) {
-  return {
-    config: "Config",
-    presets: "Presets",
-    norm: "Norm",
-    position: "Position",
-    attention: "Attention",
-    mixer: "Mixer",
-    attention_helper: "Helper",
-    mlp: "MLP",
-    expert: "Expert",
-    moe: "MoE",
-    block: "Block",
-    model: "Model",
-    helper: "Helper",
-  }[role] || role;
-}
-
 function appendToken(fragment, text, className) {
   if (!text) return;
   if (!className) {
@@ -273,13 +255,12 @@ function renderViewer(model, index, requestedSection, requestedTarget, requested
   $("#viewerSlug").textContent = model.slug;
   $("#viewerName").textContent = model.name;
   $("#sourcePath").textContent = model.source_path;
-  $("#modelFacts").replaceChildren(...modelFactNodes(model, { includeGalleryLink: false }));
+  $("#modelFacts").replaceChildren(...modelFactNodes(model));
   renderRelatedModels(index.models, model);
   window.currentModel = model;
   window.currentIndex = index;
   window.currentTargetId = "";
   renderDiagram(model);
-  renderSectionNav(model.sections);
   renderCode(model);
   setupViewerTabs(model, requestedTab);
   setupViewerActions(model, index);
@@ -303,7 +284,12 @@ function modelFactNodes(model, options = {}) {
 
   const links = el("div", "fact-links");
   const gallery = galleryHref(model);
-  if (includeGalleryLink && gallery) links.append(link("Gallery", gallery));
+  if (includeGalleryLink && gallery) {
+    const infoLink = link("More information", gallery);
+    infoLink.setAttribute("aria-label", "More information");
+    infoLink.title = "More information";
+    links.append(infoLink);
+  }
   if (links.childElementCount) facts.push(links);
   return facts;
 }
@@ -354,47 +340,11 @@ function setupViewerTabs(model, requestedTab) {
   const codePanel = $("#codeTabPanel");
   const learnPanel = $("#learnTabPanel");
   const reportPanel = $("#reportTabPanel");
-  const galleryPanel = $("#galleryTabPanel");
   const reportFrame = $("#reportFrame");
   const fallback = $("#reportFallback");
   const fallbackText = $("#reportFallbackText");
   const openLink = $("#reportOpenLink");
-  const galleryArtworkWrap = $("#galleryArtworkWrap");
-  const galleryArtwork = $("#galleryArtwork");
-  const galleryFallback = $("#galleryFallback");
-  const galleryFallbackText = $("#galleryFallbackText");
-  const gallerySourceLink = $("#gallerySourceLink");
-  if (!codePanel || !reportPanel || !galleryPanel) return;
-
-  const galleryUrl = galleryHref(model);
-  if (gallerySourceLink) {
-    gallerySourceLink.hidden = !galleryUrl;
-    if (galleryUrl) {
-      gallerySourceLink.href = galleryUrl;
-    } else {
-      gallerySourceLink.removeAttribute("href");
-    }
-  }
-
-  const artwork = model.diagram?.artwork;
-  if (galleryArtwork && galleryFallback && galleryFallbackText) {
-    if (artwork?.path) {
-      galleryArtwork.src = artwork.path;
-      galleryArtwork.alt = artwork.source_alt || `${model.name} architecture gallery artwork`;
-      galleryArtwork.title = artwork.source_title || model.name;
-      galleryArtwork.hidden = false;
-      if (galleryArtworkWrap) galleryArtworkWrap.hidden = false;
-      galleryFallback.hidden = true;
-    } else {
-      galleryArtwork.removeAttribute("src");
-      galleryArtwork.removeAttribute("title");
-      galleryArtwork.alt = "";
-      galleryArtwork.hidden = true;
-      if (galleryArtworkWrap) galleryArtworkWrap.hidden = true;
-      galleryFallbackText.textContent = "No gallery artwork is available for this model.";
-      galleryFallback.hidden = false;
-    }
-  }
+  if (!codePanel || !reportPanel) return;
 
   const originalReportUrl = model.links?.tech_report || "";
   const embedUrl = embeddableReportUrl(originalReportUrl);
@@ -416,7 +366,6 @@ function setupViewerTabs(model, requestedTab) {
   const panelsByTab = {
     code: codePanel,
     report: reportPanel,
-    gallery: galleryPanel,
   };
   if (learnPanel) panelsByTab.learn = learnPanel;
 
@@ -593,24 +542,6 @@ function link(text, href) {
   anchor.target = "_blank";
   anchor.rel = "noreferrer";
   return anchor;
-}
-
-function renderSectionNav(sections) {
-  const nav = $("#sectionNav");
-  nav.replaceChildren(
-    ...sections.map((section) => {
-      const button = el("button", `section-chip role-${section.role}`);
-      button.type = "button";
-      button.dataset.sectionId = section.id;
-      button.dataset.targetId = section.id;
-      button.dataset.searchText = `${section.role} ${section.label} ${section.summary || ""}`.toLowerCase();
-      button.title = `${section.line_start}-${section.line_end}`;
-      button.append(el("span", "chip-role", roleLabel(section.role)));
-      button.append(el("span", "chip-label", section.label));
-      button.addEventListener("click", () => activateTarget(window.currentModel, section.id));
-      return button;
-    })
-  );
 }
 
 function renderCode(model) {
@@ -1275,9 +1206,6 @@ function activateTarget(model, targetId, options = {}) {
   document
     .querySelectorAll(`[data-target-id="${escapeAttr(exactTargetId)}"]`)
     .forEach((node) => node.classList.add("active"));
-
-  document.querySelectorAll(".section-chip.active").forEach((chip) => chip.classList.remove("active"));
-  document.querySelectorAll(`.section-chip[data-section-id="${sectionId}"]`).forEach((chip) => chip.classList.add("active"));
 
   const usageText = targetRanges(target)
     .filter((range) => range.kind === "usage")

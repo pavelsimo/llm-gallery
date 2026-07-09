@@ -400,6 +400,10 @@ select {
   gap: 8px;
 }
 
+.fact-links {
+  align-items: center;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -505,7 +509,7 @@ select {
 .model-facts {
   display: grid;
   gap: 8px;
-  margin-bottom: 14px;
+  margin: 14px 0;
 }
 
 .fact-line {
@@ -539,13 +543,23 @@ select {
 }
 
 .fact-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line-soft));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   color: var(--accent-dark);
   font-size: 12px;
   font-weight: 600;
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 3px;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.fact-links a:hover {
+  border-color: var(--accent-dark);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .notice {
@@ -905,60 +919,6 @@ marker path {
   stroke-width: 2.7;
 }
 
-.section-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.section-chip {
-  max-width: 100%;
-  padding: 9px 12px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.section-chip:hover {
-  border-color: var(--line);
-}
-
-.section-chip.active {
-  border-color: var(--accent-dark);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-  box-shadow: inset 0 0 0 1px var(--accent-dark);
-}
-
-.section-chip[hidden] {
-  display: none;
-}
-
-.chip-role {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--accent-dark);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.chip-label {
-  display: block;
-  overflow: hidden;
-  max-width: 190px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  font-weight: 500;
-}
-
 /* ---------- Code pane (terminal) ---------- */
 .code-pane {
   display: flex;
@@ -1040,8 +1000,7 @@ marker path {
 
 .code-tab-panel,
 .learn-tab-panel,
-.report-tab-panel,
-.gallery-tab-panel {
+.report-tab-panel {
   flex: 1 1 auto;
 }
 
@@ -1055,13 +1014,6 @@ marker path {
   background: var(--code-bg);
 }
 
-.gallery-tab-panel {
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  background: var(--code-bg);
-}
-
 .report-tab-panel iframe {
   display: block;
   width: 100%;
@@ -1070,8 +1022,7 @@ marker path {
   background: #ffffff;
 }
 
-.report-fallback,
-.gallery-fallback {
+.report-fallback {
   display: grid;
   place-content: center;
   gap: 14px;
@@ -1080,8 +1031,7 @@ marker path {
   text-align: center;
 }
 
-.report-fallback p,
-.gallery-fallback p {
+.report-fallback p {
   max-width: 42ch;
   margin: 0;
   color: var(--code-muted);
@@ -1089,8 +1039,7 @@ marker path {
   line-height: 1.6;
 }
 
-.report-fallback a,
-.gallery-source-link {
+.report-fallback a {
   justify-self: center;
   color: var(--accent-dark);
   font-size: 12px;
@@ -1100,40 +1049,9 @@ marker path {
   text-transform: uppercase;
 }
 
-.report-fallback a:hover,
-.gallery-source-link:hover {
+.report-fallback a:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-.gallery-artwork-wrap {
-  display: grid;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: auto;
-  place-items: center;
-  padding: 18px;
-}
-
-.gallery-artwork-wrap img {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.gallery-fallback {
-  flex: 1 1 auto;
-  height: auto;
-  min-height: 0;
-}
-
-.gallery-source-link {
-  flex: 0 0 auto;
-  padding: 12px 14px;
-  border-top: 1px solid var(--code-border);
-  background: color-mix(in srgb, var(--code-toolbar-bg) 55%, var(--code-bg));
-  text-align: center;
 }
 
 /* ---------- Learn tab (concept explanations) ---------- */

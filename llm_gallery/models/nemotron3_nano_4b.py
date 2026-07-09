@@ -39,15 +39,18 @@ class Config:
     head_dim: int = 128
     rope_theta: float = 1000000.0
     layer_pattern: str = "MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*MEMEM*"
-    mamba_expand: int = 2
-    mamba_d_state: int = 64
+    mamba_n_heads: int = 96
+    mamba_head_dim: int = 80
+    mamba_n_groups: int = 8
+    mamba_d_state: int = 128
     mamba_d_conv: int = 4
-    mamba_dt_rank: int = 80
     use_moe: bool = False
     n_experts: int = 8
     n_experts_per_tok: int = 2
     moe_intermediate_size: int = 128
     n_shared_experts: int = 1
+    shared_expert_intermediate_size: int = 256
+    routed_scaling_factor: float = 1.0
     intermediate_size: int = 12544
     norm_eps: float = 1e-5
     tie_embeddings: bool = False
@@ -56,9 +59,10 @@ class Config:
 PRESETS: dict[str, Config] = {
     "tiny": Config(
         vocab_size=65, context_length=128, n_layer=6, n_embd=128, n_head=4, n_kv_head=2,
-        head_dim=32, rope_theta=10000.0, layer_pattern="ME*MEM", mamba_expand=2,
-        mamba_d_state=8, mamba_d_conv=4, mamba_dt_rank=16, use_moe=False, n_experts=8,
-        n_experts_per_tok=2, moe_intermediate_size=128, n_shared_experts=1, intermediate_size=256,
+        head_dim=32, rope_theta=10000.0, layer_pattern="ME*MEM", mamba_n_heads=4,
+        mamba_head_dim=32, mamba_n_groups=2, mamba_d_state=8, mamba_d_conv=4, use_moe=False,
+        n_experts=8, n_experts_per_tok=2, moe_intermediate_size=128, n_shared_experts=1,
+        shared_expert_intermediate_size=256, routed_scaling_factor=1.0, intermediate_size=256,
     ),
     "nemotron3-nano-4b": Config(),
 }
@@ -87,49 +91,55 @@ class RMSNorm(nn.Module):
 # Mamba-2 selective SSM
 # --------------------------------------------------------------------------------------------------
 class Mamba(nn.Module):
-    """Selective state-space model: input-dependent gating of a linear recurrence (Mamba-2 style)."""
+    """Multi-head selective state-space model with per-head scalar decay (Mamba-2 / NemotronH)."""
+
     def __init__(self, cfg: Config):
         super().__init__()
-        self.d_inner = cfg.mamba_expand * cfg.n_embd
+        self.n_heads = cfg.mamba_n_heads
+        self.head_dim = cfg.mamba_head_dim
+        self.n_groups = cfg.mamba_n_groups
         self.d_state = cfg.mamba_d_state
-        self.dt_rank = cfg.mamba_dt_rank
-        self.in_proj = nn.Linear(cfg.n_embd, 2 * self.d_inner, bias=False)  # -> (x, gate z)
+        self.d_inner = cfg.mamba_n_heads * cfg.mamba_head_dim
+        self.conv_dim = self.d_inner + 2 * self.n_groups * self.d_state  # conv sees [x, B, C]
+        # one fused projection -> (gate z, conv input [x, B, C], per-head Δ)
+        self.in_proj = nn.Linear(cfg.n_embd, self.d_inner + self.conv_dim + self.n_heads, bias=False)
         self.conv1d = nn.Conv1d(
-            self.d_inner, self.d_inner, kernel_size=cfg.mamba_d_conv,
-            groups=self.d_inner, padding=cfg.mamba_d_conv - 1,  # causal: pad left, trim right
+            self.conv_dim, self.conv_dim, kernel_size=cfg.mamba_d_conv,
+            groups=self.conv_dim, padding=cfg.mamba_d_conv - 1,  # causal: pad left, trim right
         )
-        self.x_proj = nn.Linear(self.d_inner, self.dt_rank + 2 * self.d_state, bias=False)
-        self.dt_proj = nn.Linear(self.dt_rank, self.d_inner)
-        self.A_log = nn.Parameter(torch.log(torch.arange(1, self.d_state + 1).float()).repeat(self.d_inner, 1))
-        self.D = nn.Parameter(torch.ones(self.d_inner))
+        self.A_log = nn.Parameter(torch.log(torch.arange(1, self.n_heads + 1).float()))  # scalar A per head
+        self.dt_bias = nn.Parameter(torch.zeros(self.n_heads))
+        self.D = nn.Parameter(torch.ones(self.n_heads))  # per-head skip connection
+        self.norm = RMSNorm(self.d_inner, cfg.norm_eps)  # gated: applied to y * silu(z)
         self.out_proj = nn.Linear(self.d_inner, cfg.n_embd, bias=False)
-        self.k_conv = cfg.mamba_d_conv
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, t, _ = x.shape
-        x_in, z = self.in_proj(x).chunk(2, dim=-1)  # each [B, T, d_inner]
+        nh, hd, ng, ds = self.n_heads, self.head_dim, self.n_groups, self.d_state
+        z, xbc, dt = self.in_proj(x).split([self.d_inner, self.conv_dim, nh], dim=-1)
 
-        # short causal depthwise conv over time
-        x_in = self.conv1d(x_in.transpose(1, 2))[..., :t].transpose(1, 2)
-        x_in = F.silu(x_in)
+        # short causal depthwise conv over time, applied to x, B and C together
+        xbc = F.silu(self.conv1d(xbc.transpose(1, 2))[..., :t].transpose(1, 2))
+        x_in, B, C = xbc.split([self.d_inner, ng * ds, ng * ds], dim=-1)
+        x_in = x_in.view(b, t, nh, hd)
+        # B and C are shared by groups of heads (n_heads // n_groups heads per group)
+        B = B.view(b, t, ng, ds).repeat_interleave(nh // ng, dim=2)  # [B, T, nh, d_state]
+        C = C.view(b, t, ng, ds).repeat_interleave(nh // ng, dim=2)
 
-        # input-dependent Δ, B, C
-        dbl = self.x_proj(x_in)
-        dt, B, C = dbl.split([self.dt_rank, self.d_state, self.d_state], dim=-1)
-        dt = F.softplus(self.dt_proj(dt))  # [B, T, d_inner]
-        A = -torch.exp(self.A_log)  # [d_inner, d_state], negative -> stable decay
+        dt = F.softplus(dt + self.dt_bias)  # [B, T, nh] input-dependent per-head timestep
+        A = -torch.exp(self.A_log)  # [nh], negative -> stable decay
 
-        h = x.new_zeros(b, self.d_inner, self.d_state)
+        h = x.new_zeros(b, nh, hd, ds)
         ys = []
         for s in range(t):
-            dt_s = dt[:, s].unsqueeze(-1)  # [B, d_inner, 1]
-            dA = torch.exp(dt_s * A)  # [B, d_inner, d_state]
-            dBx = dt_s * B[:, s].unsqueeze(1) * x_in[:, s].unsqueeze(-1)  # [B, d_inner, d_state]
+            dt_s = dt[:, s, :, None, None]  # [B, nh, 1, 1]
+            dA = torch.exp(dt_s * A[None, :, None, None])  # scalar decay per head
+            dBx = dt_s * x_in[:, s].unsqueeze(-1) * B[:, s].unsqueeze(-2)  # [B, nh, hd, d_state]
             h = dA * h + dBx
-            ys.append((h * C[:, s].unsqueeze(1)).sum(-1))  # [B, d_inner]
-        y = torch.stack(ys, dim=1)  # [B, T, d_inner]
-        y = y + x_in * self.D
-        y = y * F.silu(z)  # gate
+            ys.append((h * C[:, s].unsqueeze(-2)).sum(-1))  # [B, nh, hd]
+        y = torch.stack(ys, dim=1)  # [B, T, nh, hd]
+        y = y + x_in * self.D[None, None, :, None]
+        y = self.norm(y.reshape(b, t, self.d_inner) * F.silu(z))  # gated RMSNorm
         return self.out_proj(y)
 
 
@@ -191,16 +201,15 @@ class Attention(nn.Module):
 # Feed-forward (MoE or dense)
 # --------------------------------------------------------------------------------------------------
 class MLP(nn.Module):
-    """SwiGLU expert MLP; used both as the dense fallback and as a single routed expert."""
+    """Squared-ReLU MLP (``mlp_hidden_act: relu2``); the dense fallback and each routed expert."""
 
     def __init__(self, n_embd, intermediate):
         super().__init__()
-        self.gate_proj = nn.Linear(n_embd, intermediate, bias=False)
         self.up_proj = nn.Linear(n_embd, intermediate, bias=False)
         self.down_proj = nn.Linear(intermediate, n_embd, bias=False)
 
     def forward(self, x):
-        return self.down_proj(F.silu(self.gate_proj(x)) * self.up_proj(x))
+        return self.down_proj(F.relu(self.up_proj(x)).square())
 
 
 class MoE(nn.Module):
@@ -209,10 +218,11 @@ class MoE(nn.Module):
     def __init__(self, cfg: Config):
         super().__init__()
         self.n_experts, self.top_k = cfg.n_experts, cfg.n_experts_per_tok
+        self.scaling = cfg.routed_scaling_factor
         self.gate = nn.Linear(cfg.n_embd, cfg.n_experts, bias=False)
         self.experts = nn.ModuleList(MLP(cfg.n_embd, cfg.moe_intermediate_size) for _ in range(cfg.n_experts))
         self.shared = (
-            MLP(cfg.n_embd, cfg.moe_intermediate_size * cfg.n_shared_experts)
+            MLP(cfg.n_embd, cfg.shared_expert_intermediate_size)
             if cfg.n_shared_experts > 0 else None
         )
 
@@ -220,7 +230,7 @@ class MoE(nn.Module):
         b, t, c = x.shape
         x = x.reshape(-1, c)
         topw, topi = F.softmax(self.gate(x), dim=-1).topk(self.top_k, dim=-1)
-        topw = topw / topw.sum(dim=-1, keepdim=True)
+        topw = topw / topw.sum(dim=-1, keepdim=True) * self.scaling
         out = torch.zeros_like(x)
         for e in range(self.n_experts):
             sel = topi == e
@@ -297,10 +307,6 @@ class Model(nn.Module):
         cos, sin = precompute_rope(cfg.head_dim, cfg.context_length, cfg.rope_theta)
         self.register_buffer("rope_cos", cos, persistent=False)
         self.register_buffer("rope_sin", sin, persistent=False)
-        causal = torch.triu(
-            torch.ones(cfg.context_length, cfg.context_length, dtype=torch.bool), diagonal=1
-        )
-        self.register_buffer("causal_mask", causal, persistent=False)
         self.apply(self._init_weights)
 
     def _init_weights(self, m: nn.Module) -> None:
@@ -313,10 +319,12 @@ class Model(nn.Module):
 
     def forward(self, idx: torch.Tensor) -> torch.Tensor:
         b, t = idx.shape
+        assert t <= self.config.context_length, "sequence longer than context_length"
         x = self.tok_emb(idx)
         cos, sin = self.rope_cos[:t], self.rope_sin[:t]
+        mask = torch.triu(torch.ones(t, t, dtype=torch.bool, device=idx.device), diagonal=1)
         for block in self.blocks:
-            x = block(x, cos, sin, self.causal_mask)
+            x = block(x, cos, sin, mask)
         return self.lm_head(self.norm(x))
 
 
