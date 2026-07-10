@@ -1,112 +1,54 @@
 # llm-gallery
 
-PyTorch reimplementations of **every model** in Sebastian Raschka's
-[LLM Architecture Gallery](https://sebastianraschka.com/llm-architecture-gallery). The goal is to learn how
-modern LLMs actually work by building each architecture from scratch, then reading, running, and training it.
+Readable, runnable PyTorch reimplementations of every model in Sebastian Raschka's
+[LLM Architecture Gallery](https://sebastianraschka.com/llm-architecture-gallery).
 
-## Philosophy
+Explore the architectures in the [interactive visualizer](https://pavelsimo.github.io/llm-gallery/),
+or run them locally to inspect shapes, parameter counts, forward and backward passes, and tiny training runs.
 
-Every model lives in a single self-contained file. Open anything in `llm_gallery/models/` and you can read
-the whole architecture top to bottom: every norm, attention, and feed-forward block is defined right there,
-nanoGPT style. Building blocks are deliberately duplicated across files so nothing hides behind an import.
+![The llm-gallery model browser](docs/images/model-gallery.png)
 
-The focus is architecture, not weights. Models are randomly initialized, there is no HuggingFace dependency,
-and no pretrained weights get loaded. What matters is the mechanics: shapes, the forward and backward pass,
-parameter counts.
+## From diagram to code
 
-And everything runs. A small shared harness can train any model on a tiny dataset and sample text from it,
-so you can watch an architecture actually learn.
+Each architecture is paired with its self-contained Python implementation. Select a block in the diagram
+to jump to the matching code, or select a line of code to find the corresponding part of the model.
+
+![GPT-2 XL attention mapped to its PyTorch implementation](docs/images/model-code-mapping.png)
 
 ## Quickstart
 
 ```bash
-uv sync                                   # install torch, numpy, pytest, ruff
+# Install dependencies
+uv sync
 
-# show the recommended learning path (Tier 1 → 2 → 3)
-uv run python -m llm_gallery.cli path
-
-# list every model in the gallery and its status
+# Browse the available models
 uv run python -m llm_gallery.cli list
 
-# read a model's architecture notes + paper link
-uv run python -m llm_gallery.cli info gpt2-xl
-
-# build the tiny preset, run forward+backward, print shapes & param count
+# Build a tiny model and run a forward + backward pass
 uv run python -m llm_gallery.cli smoke gpt2-xl
 
-# train the tiny preset on char-level tiny-shakespeare
+# Train the tiny preset on tiny Shakespeare
 uv run python -m llm_gallery.cli train gpt2-xl --preset tiny --steps 500
 
-# sample text from the trained checkpoint
-uv run python -m llm_gallery.cli generate gpt2-xl --ckpt checkpoints/gpt2-xl.pt --prompt "ROMEO:"
-
-# run the lightweight parametrized test suite over every registered model
+# Run the test suite
 uv run pytest
-
-# run real-scale meta-device parameter-count audits
-uv run pytest -m slow
 ```
 
-Every model file is also runnable on its own as a smoke test:
-
-```bash
-uv run python llm_gallery/models/gpt2_xl.py
-```
-
-## Interactive visualizer
-
-The visualizer is live at **<https://pavelsimo.github.io/llm-gallery/>**. It shows each model's diagram and
-source side by side: clicking a diagram block highlights the matching Python, and clicking code highlights
-the matching diagram node.
-
-To build and serve it locally:
+To serve the visualizer locally:
 
 ```bash
 uv run python scripts/build_visualizer_data.py
 python -m http.server 8000 --directory web
 ```
 
-## Presets
+## How the models are organized
 
-Each model file defines two presets. `tiny` is the runnable one, sized to train on a CPU or small GPU in
-minutes; it's what the CLI, tests, and training harness use. `real` records the published dimensions for
-reference and isn't meant to be instantiated full-size. For `real.context_length`, the convention is the
-public HuggingFace `config.json` `max_position_embeddings` when available, otherwise the gallery card's
-context length, which can differ from rounded labels like "128K".
+Every file in `llm_gallery/models/` defines one complete architecture from top to bottom. Building blocks
+are intentionally kept in the model file so the implementation can be read without chasing abstractions.
 
-## Layout
+The `tiny` presets are small enough for tests and learning runs. The `real` presets preserve published model
+dimensions for reference. Models are randomly initialized: the project has no Hugging Face dependency and
+does not download pretrained weights.
 
-```
-llm_gallery/
-  models/        one self-contained file per gallery model + registry.py
-  harness/       shared tooling: data.py, train.py, generate.py, interface.py
-  cli.py         list | info | path | smoke | train | generate
-docs/
-  architectures.md   the taxonomy of ideas the 83 models are built from
-tests/
-  test_models.py     parametrized over the registry (shapes, backward, determinism, generate)
-```
-
-## Learning path
-
-```bash
-uv run python -m llm_gallery.cli path        # print the recommended reading order
-uv run python -m llm_gallery.cli path --all  # include all 83 models
-```
-
-The 83 models are grouped into three tiers:
-
-| Tier | Count | Meaning |
-|------|-------|---------|
-| **1 — Essential** | 8 | One file per architectural family; start here |
-| **2 — Important** | 10 | Introduce a specific new idea vs. a Tier 1 neighbour |
-| **3 — Variant** | 65 | Config/scale variants; read the base file first |
-
-**Suggested workflow per model:**
-
-1. `uv run python -m llm_gallery.cli info <slug>` — read the one-line concept note and paper link
-2. Open `llm_gallery/models/<slug>.py` — every building block is in a single file, top-to-bottom
-3. `uv run python -m llm_gallery.cli smoke <slug>` — run forward+backward; verify shapes and param count
-
-See [`docs/architectures.md`](docs/architectures.md) for the conceptual "family tree" of building blocks
-(normalization, positional encodings, attention variants, MoE, non-attention mixers).
+For the architectural family tree and key concepts, see
+[`docs/architectures.md`](docs/architectures.md).
