@@ -41,6 +41,89 @@ def launch_chromium(playwright):
         raise
 
 
+def test_theme_follows_system_persists_and_filters_artwork():
+    with static_web_server() as base_url, sync_playwright() as playwright:
+        browser = launch_chromium(playwright)
+        try:
+            context = browser.new_context(color_scheme="light")
+            page = context.new_page()
+            page.goto(f"{base_url}/index.html", wait_until="networkidle")
+            expect(page.locator("html")).to_have_attribute("data-theme", "light")
+            toggle = page.locator(".theme-toggle")
+            expect(toggle).to_have_attribute("aria-pressed", "false")
+            expect(toggle).to_have_attribute("aria-label", "Switch to dark mode")
+
+            page.emulate_media(color_scheme="dark")
+            expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+            page.emulate_media(color_scheme="light")
+            expect(page.locator("html")).to_have_attribute("data-theme", "light")
+
+            toggle.click()
+            expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+            expect(toggle).to_have_attribute("aria-pressed", "true")
+            assert page.evaluate("() => localStorage.getItem('llm-gallery-theme')") == "dark"
+            page.emulate_media(color_scheme="light")
+            expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+
+            page.goto(f"{base_url}/viewer.html?model=kimi-k2", wait_until="networkidle")
+            expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+            expect(page.locator(".theme-toggle")).to_have_count(0)
+            artwork = page.locator(".diagram-artwork-image")
+            expect(artwork).to_be_visible()
+            assert "invert(1)" in artwork.evaluate("node => getComputedStyle(node).filter")
+
+            page.goto(f"{base_url}/index.html", wait_until="networkidle")
+            page.locator(".theme-toggle").click()
+            expect(page.locator("html")).to_have_attribute("data-theme", "light")
+            page.goto(f"{base_url}/viewer.html?model=kimi-k2", wait_until="networkidle")
+            artwork = page.locator(".diagram-artwork-image")
+            page.wait_for_timeout(250)
+            assert artwork.evaluate("node => getComputedStyle(node).filter") == "none"
+
+            page.goto(f"{base_url}/compare.html?left=kimi-k2&right=llama3-8b", wait_until="networkidle")
+            expect(page.locator("html")).to_have_attribute("data-theme", "light")
+            expect(page.locator(".theme-toggle")).to_have_count(0)
+            expect(page.locator(".diagram-artwork-image")).to_have_count(2)
+            assert page.locator(".diagram-artwork-image").first.evaluate(
+                "node => getComputedStyle(node).filter"
+            ) == "none"
+            context.close()
+
+            dark_context = browser.new_context(color_scheme="dark")
+            dark_page = dark_context.new_page()
+            dark_page.goto(f"{base_url}/index.html", wait_until="networkidle")
+            expect(dark_page.locator("html")).to_have_attribute("data-theme", "dark")
+            dark_context.close()
+
+            fallback_context = browser.new_context(color_scheme="light")
+            fallback_context.add_init_script(
+                """
+                Object.defineProperty(window, "localStorage", {
+                  get() { throw new DOMException("Storage unavailable", "SecurityError"); }
+                });
+                """
+            )
+            fallback_page = fallback_context.new_page()
+            fallback_page.goto(f"{base_url}/index.html", wait_until="networkidle")
+            expect(fallback_page.locator("html")).to_have_attribute("data-theme", "light")
+            fallback_page.locator(".theme-toggle").click()
+            expect(fallback_page.locator("html")).to_have_attribute("data-theme", "dark")
+            fallback_context.close()
+
+            mobile_context = browser.new_context(
+                color_scheme="light", viewport={"width": 390, "height": 844}
+            )
+            mobile_page = mobile_context.new_page()
+            mobile_page.goto(f"{base_url}/viewer.html?model=kimi-k2", wait_until="networkidle")
+            expect(mobile_page.locator(".theme-toggle")).to_have_count(0)
+            assert mobile_page.evaluate(
+                "() => document.documentElement.scrollWidth <= document.documentElement.clientWidth"
+            )
+            mobile_context.close()
+        finally:
+            browser.close()
+
+
 def test_viewer_diagram_code_roundtrip():
     with static_web_server() as base_url, sync_playwright() as playwright:
         browser = launch_chromium(playwright)

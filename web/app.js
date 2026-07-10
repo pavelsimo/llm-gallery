@@ -25,6 +25,27 @@ function el(tag, className, text) {
   return node;
 }
 
+function initThemeControls() {
+  const controller = window.LlmGalleryTheme;
+  if (!controller) return;
+
+  const controls = document.querySelectorAll(".theme-toggle");
+  const update = () => {
+    const theme = controller.current();
+    const isDark = theme === "dark";
+    for (const control of controls) {
+      control.setAttribute("aria-pressed", String(isDark));
+      control.setAttribute("aria-label", `Switch to ${isDark ? "light" : "dark"} mode`);
+      const label = $(".theme-toggle-label", control);
+      if (label) label.textContent = isDark ? "Light" : "Dark";
+    }
+  };
+
+  for (const control of controls) control.addEventListener("click", () => controller.toggle());
+  window.addEventListener("llm-gallery-theme-change", update);
+  update();
+}
+
 async function fetchJson(path) {
   const response = await fetch(path);
   if (!response.ok) {
@@ -1335,6 +1356,7 @@ function renderConfigDiff(left, right) {
 }
 
 const page = document.body.dataset.page;
+initThemeControls();
 if (page === "index") initIndex();
 if (page === "viewer") initViewer();
 if (page === "compare") initCompare();
