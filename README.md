@@ -15,6 +15,8 @@ to jump to the matching code, or select a line of code to find the corresponding
 
 ![GPT-2 XL attention mapped to its PyTorch implementation](docs/images/model-code-mapping.png)
 
+The Learn tab explains the key ideas behind each architecture.
+
 ![The Learn tab explaining an architectural concept](docs/images/model-learn.png)
 
 ## Quickstart
