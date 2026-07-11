@@ -725,6 +725,14 @@ select {
   box-shadow: var(--shadow-md);
 }
 
+body[data-page="viewer"] .diagram-wrap {
+  background: #000000;
+}
+
+:root[data-theme="light"] body[data-page="viewer"] .diagram-wrap {
+  background: #ffffff;
+}
+
 .diagram-viewport {
   overflow: hidden;
   touch-action: none;

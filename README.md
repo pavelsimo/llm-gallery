@@ -1,6 +1,6 @@
 # llm-gallery
 
-Readable, runnable PyTorch reimplementations of every model in Sebastian Raschka's
+Readable, runnable implementations of every model in Sebastian Raschka's
 [LLM Architecture Gallery](https://sebastianraschka.com/llm-architecture-gallery).
 
 Explore the architectures in the [interactive visualizer](https://pavelsimo.github.io/llm-gallery/),
@@ -14,6 +14,8 @@ Each architecture is paired with its self-contained Python implementation. Selec
 to jump to the matching code, or select a line of code to find the corresponding part of the model.
 
 ![GPT-2 XL attention mapped to its PyTorch implementation](docs/images/model-code-mapping.png)
+
+![The Learn tab explaining an architectural concept](docs/images/model-learn.png)
 
 ## Quickstart
 
